@@ -1,5 +1,149 @@
 [
     {
+        "id": 584,
+        "time": "2026-02-12 15:31:15",
+        "code": 404,
+        "type": "Exception",
+        "message": "Controller not found",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 41
+    },
+    {
+        "id": 583,
+        "time": "2026-02-12 15:31:14",
+        "code": 404,
+        "type": "Exception",
+        "message": "Controller not found",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 41
+    },
+    {
+        "id": 582,
+        "time": "2026-02-12 15:30:59",
+        "code": 404,
+        "type": "Exception",
+        "message": "Controller not found",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 41
+    },
+    {
+        "id": 581,
+        "time": "2026-02-12 15:28:09",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Use of undefined constant b - assumed 'b' (this will throw an Error in a future version of PHP)",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 153
+    },
+    {
+        "id": 580,
+        "time": "2026-02-12 15:28:03",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 38
+    },
+    {
+        "id": 579,
+        "time": "2026-02-12 15:02:06",
+        "code": 0,
+        "type": "ParseError",
+        "message": "syntax error, unexpected '{', expecting ')'",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 144
+    },
+    {
+        "id": 578,
+        "time": "2026-02-12 15:02:04",
+        "code": 0,
+        "type": "ParseError",
+        "message": "syntax error, unexpected '{', expecting ')'",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 144
+    },
+    {
+        "id": 577,
+        "time": "2026-02-12 15:01:56",
+        "code": 0,
+        "type": "ParseError",
+        "message": "syntax error, unexpected '{', expecting ')'",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 144
+    },
+    {
+        "id": 576,
+        "time": "2026-02-12 15:01:44",
+        "code": 0,
+        "type": "ParseError",
+        "message": "syntax error, unexpected '{', expecting ')'",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 144
+    },
+    {
+        "id": 575,
+        "time": "2026-02-12 15:01:32",
+        "code": 0,
+        "type": "ParseError",
+        "message": "syntax error, unexpected '{', expecting ')'",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 144
+    },
+    {
+        "id": 574,
+        "time": "2026-02-12 15:01:26",
+        "code": 0,
+        "type": "ParseError",
+        "message": "syntax error, unexpected '{', expecting ')'",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 144
+    },
+    {
+        "id": 573,
+        "time": "2026-02-12 15:01:17",
+        "code": 0,
+        "type": "Error",
+        "message": "Call to undefined method app\\Query::aldfl()",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 145
+    },
+    {
+        "id": 572,
+        "time": "2026-02-12 15:01:14",
+        "code": 400,
+        "type": "Exception",
+        "message": "Отсутствуют обязательные параметры: id",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 60
+    },
+    {
+        "id": 571,
+        "time": "2026-02-12 15:00:59",
+        "code": 400,
+        "type": "Exception",
+        "message": "Отсутствуют обязательные параметры: id",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 60
+    },
+    {
+        "id": 570,
+        "time": "2026-02-12 15:00:56",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined variable: id",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 145
+    },
+    {
+        "id": 569,
+        "time": "2026-02-12 15:00:44",
+        "code": 400,
+        "type": "Exception",
+        "message": "Отсутствуют обязательные параметры: id",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 60
+    },
+    {
         "id": 568,
         "time": "2026-02-12 13:58:42",
         "code": 500,

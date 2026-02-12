@@ -10,7 +10,7 @@ class AuthService
     private const SESSION_KEY = '__user_id';
     public $user;
 
-    public function __constructor()
+    public function __construct()
     {
         if (!isset($_SESSION[self::SESSION_KEY])) {
             return null;

@@ -124,38 +124,10 @@ class SiteController extends Controller {
         return $this->redirect('/');
     }
 
-    public function actionRecursion()
-    {
-
-        $model = Shezhire::find()->where(['id' => 1])->one();
-
-        return $this->renderPartial('recursion', [
-            'model' => $model
-        ]);
-
-    }
-
     public function actionModal()
     {
         return $this->renderPartial('modal');
     }
 
-    public function actionLoad($id)
-    {
-        $model = Shezhire::find()->where(['parent_id' => $id])->all();
-
-        return $this->response->json($model);
-    }
-
-    public function findModel($model, $id)
-    {
-        $m = "\\app\\models\\$model";
-        $m = $m::find()->where(['id' => $id])->one();
-
-        if(!$m){
-            throw new \Exception("Не удалось найти запись");
-        }
-        return $model;
-    }
 
 }

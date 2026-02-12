@@ -1,6 +1,7 @@
 <?php
 /** @var Throwable $e */
 /** @var int $code */
+
 ?>
 
 <div class="container my-5">

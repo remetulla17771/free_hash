@@ -6,6 +6,15 @@ class Router {
     public function __construct(Request $request = null) {
         $this->request = $request;
     }
+
+    private function toStudly(string $name): string
+    {
+        // "test-test" / "test_test" -> "TestTest"
+        $name = str_replace(['-', '_'], ' ', $name);
+        $name = ucwords($name);
+        return str_replace(' ', '', $name);
+    }
+
     public function resolve()
     {
 //        $segments = UrlManager::parseRequest($_SERVER['REQUEST_URI']);
@@ -23,9 +32,9 @@ class Router {
 
 
         $controllerClass =
-            'app\\controllers\\' . ucfirst($controllerName) . 'Controller';
+            'app\\controllers\\' . $this->toStudly($controllerName) . 'Controller';
 
-        $actionMethod = 'action' . ucfirst($actionName);
+        $actionMethod = 'action' . $this->toStudly($actionName);
 
 
         if (!class_exists($controllerClass)) {
