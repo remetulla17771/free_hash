@@ -3,6 +3,8 @@
 
 namespace app\helpers;
 
+use app\App;
+
 class UploadFile
 {
     private $file;
@@ -15,7 +17,7 @@ class UploadFile
     public function __construct($file, $destination, $allowedTypes = ['image/*', 'audio/*', 'image/gif'], $maxSize = 200 * 1024 * 1024)
     {
         $this->file = $file;
-        $this->destination = App::$app->alias['@web'].$destination;
+        $this->destination = App::getAlias('@uploads').$destination;
         $this->allowedTypes = $allowedTypes;
         $this->maxSize = $maxSize;
         $this->extension = $this->getExtension();

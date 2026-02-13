@@ -92,4 +92,14 @@ class App
         }
     }
 
+
+    // ------------------------
+    // Методы для alias
+    // ------------------------
+    public function getAlias($key)
+    {
+        return $this->config('alias')[$key] ?? null;
+    }
+
+
 }

@@ -1,4 +1,4 @@
-# free_hash
+# Free Hash
 
 Мини-фреймворк на PHP в стиле Yii2 (упрощённый MVC): `web/index.php → Router → Controller → View/Layout`, простые компоненты из конфига, ActiveRecord/Query, i18n, ассеты, обработка ошибок и логирование.
 
@@ -113,20 +113,20 @@ RewriteRule ^ index.php [L]
 ## Как работает запрос
 
 1) `web/index.php`:
-    - стартует session
-    - регистрирует `ErrorHandler`
-    - подключает autoload
-    - создаёт `new app\App()` и вызывает `run()`
+   - стартует session
+   - регистрирует `ErrorHandler`
+   - подключает autoload
+   - создаёт `new app\App()` и вызывает `run()`
 
 2) `App`:
-    - создаёт `Request`, `Router`
-    - грузит `app/config/web.php`
-    - создаёт компоненты и кладёт их в `$this-><key>`
+   - создаёт `Request`, `Router`
+   - грузит `app/config/web.php`
+   - создаёт компоненты и кладёт их в `$this-><key>`
 
 3) `Router::resolve()`:
-    - определяет `controller/action` по сегментам URL
-    - вызывает `Controller::actionX(...)` через Reflection
-    - если action вернул `Response` → вызывает `send()`
+   - определяет `controller/action` по сегментам URL
+   - вызывает `Controller::actionX(...)` через Reflection
+   - если action вернул `Response` → вызывает `send()`
 
 ---
 
@@ -353,18 +353,12 @@ app/config/db.local.php
 ---
 
 ## Известные проблемы (то, что реально стоит исправить)
+1) Несостыковка языков:
+   - В layout есть переключатель `ru/kk`
+   - В `UrlManager::$languages` указаны `ru/en/kz`, а папка переводов — `kk`  
+     Рекомендуется привести всё к одному набору (`ru/kk`).
 
-1) `app/AuthService.php` использует `__constructor()` — это **не** конструктор PHP.  
-   Нужно `__construct()`.
-
-2) `app/ActiveRecord.php` в `deleteAll()` вызывает `Db::pdo()` — такого метода нет.  
-   Нужно `Db::getInstance()`.
-
-3) Несостыковка языков:
-    - В layout есть переключатель `ru/kk`
-    - В `UrlManager::$languages` указаны `ru/en/kz`, а папка переводов — `kk`  
-      Рекомендуется привести всё к одному набору (`ru/kk`).
-
+2) Дать 777 права на все файлы
 ---
 
 ## Лицензия

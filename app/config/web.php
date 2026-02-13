@@ -21,5 +21,9 @@ return [
         'session' => [
             'class' => '\app\helpers\Session'
         ]
+    ],
+    'alias' => [
+        '@web' => '/',
+        '@uploads' => '/uploads/'
     ]
 ];
