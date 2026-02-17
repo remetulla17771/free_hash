@@ -14,6 +14,9 @@ class ConsoleApplication
         $this->register(new MakeControllerCommand());
         $this->register(new MakeModelCommand());
         $this->register(new MakeCrudCommand());
+        $this->register(new MakeMigrationCommand());
+        $this->register(new MigrateCommand());
+
     }
 
     public function register(CommandInterface $c): void

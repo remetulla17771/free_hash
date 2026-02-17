@@ -42,6 +42,7 @@ app/
   Db.php
   ActiveRecord.php
   Query.php
+  Migration.php
   ErrorHandler.php
   AuthService.php
   config/
@@ -51,6 +52,17 @@ app/
     SiteController.php
     ErrorController.php
     MoreController.php
+  console/
+    ConsoleApplication.php
+    CommandInterface.php
+    Input.php
+    Output.php
+    HelpCommand.php
+    MakeControllerCommand.php
+    MakeModelCommand.php
+    MakeCrudCommand.php
+    MakeMigrationCommand.php
+    MigrateCommand.php
   helpers/
     I18n.php
     Html.php
@@ -83,6 +95,8 @@ web/
   index.php
   .htaccess
   assets/...
+
+migrations/
 
 runtime/
   logs/
@@ -369,6 +383,8 @@ app/config/db.local.php
 - `make:controller` — контроллер + папка views
 - `make:model` — ActiveRecord модель по таблице
 - `make:crud` — CRUD (контроллер + views) по модели/таблице
+- `make:migration` — Создает файл для миграцию
+- `make:migrate` — Создает таблица на базе данных
 
 ### Запуск
 
@@ -430,6 +446,89 @@ php bin/console.php make:crud Post --table=post
 ---
 
 
+### make:migration
+
+Создаёт файл миграции в папке `migrations/`.
+
+```bash
+php bin/console.php make:migration create_user_table
+```
+
+Результат: файл вида `migrations/mYYMMDD_HHMMSS_create_user_table.php`.
+
+Опции:
+- `--dir=migrations` — папка миграций (по умолчанию `migrations`)
+- `--force` — перезаписать файл, если уже существует
+
+### make:migrate
+
+Применяет/откатывает миграции. Состояние хранится в таблице `migration` (по умолчанию).
+
+Применить все новые миграции:
+
+```bash
+php bin/console.php migrate
+```
+
+Откатить последнюю миграцию:
+
+```bash
+php bin/console.php migrate down 1
+```
+
+Опции:
+- `--dir=migrations` — папка миграций
+- `--table=migration` — имя таблицы для учёта применённых миграций
+
+### Базовый класс Migration
+
+Файл: `app/Migration.php`. В миграциях доступны хелперы, чтобы не писать “портянки” SQL:
+
+- `createTable($table, $columns, $options)`
+- `dropTable($table)`
+- `addColumn($table, $column, $type)`
+- `dropColumn($table, $column)`
+- `createIndex($name, $table, $columns, $unique=false)`
+- `dropIndex($name, $table)`
+
+Типы (строители строк):
+- `$this->pk()`, `$this->int()`, `$this->bool()`, `$this->string($len)`, `$this->text()`, `$this->datetime()`, `$this->timestamp()`, `$this->decimal($p,$s)`
+- модификаторы: `$this->notNull()`, `$this->defaultValue($v)`, `$this->defaultExpr('CURRENT_TIMESTAMP')`
+
+Пример миграции (создание таблицы `user` + уникальный индекс):
+
+```php
+<?php
+declare(strict_types=1);
+
+use app\Migration;
+
+class m250217_120000_create_user_table extends Migration
+{
+    public function up(): void
+    {
+        $this->createTable('user', [
+            'id' => $this->pk(),
+            'login' => $this->string(64) . ' ' . $this->notNull(),
+            'password_hash' => $this->string(255) . ' ' . $this->notNull(),
+            'created_at' => $this->timestamp() . ' ' . $this->notNull() . ' ' . $this->defaultExpr('CURRENT_TIMESTAMP'),
+        ]);
+
+        $this->createIndex('ux_user_login', 'user', 'login', true);
+    }
+
+    public function down(): void
+    {
+        $this->dropIndex('ux_user_login', 'user');
+        $this->dropTable('user');
+    }
+}
+```
+
+> Важно: имя класса в твоём файле будет другое (с твоим timestamp). Оставляй имя класса как сгенерировалось, меняй только содержимое `up()` / `down()`.
+
+
+---
 
 
 ## Лицензия
