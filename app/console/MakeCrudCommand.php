@@ -197,18 +197,44 @@ class MakeCrudCommand implements CommandInterface
             "]); ?>\n";
     }
 
+//    private function buildViewView(string $modelClass, string $controllerId, string $pk, array $cols): string
+//    {
+//        $rows = "";
+//        foreach ($cols as $c) {
+//            $f = (string)($c['Field'] ?? '');
+//            if ($f === '') continue;
+/*            $rows .= "<tr><th>{$f}</th><td><?= Html::encode(\$model->{$f}) ?></td></tr>\n";*/
+//        }
+//
+//        return "<?php\n" .
+//            "/** @var \$model {$modelClass} */\n\n" .
+//            "use app\\helpers\\Html;\n\n" .
+//            "\$this->title = 'View';\n" .
+/*            "?>\n\n" .*/
+/*            "<h1><?= Html::encode(\$this->title) ?></h1>\n\n" .*/
+//            "<p>\n" .
+/*            "    <?= Html::a('Back', ['/$controllerId/index'], ['class' => 'btn btn-secondary']) ?>\n" .*/
+/*            "    <?= Html::a('Update', ['/$controllerId/update', 'id' => \$model->{$pk}], ['class' => 'btn btn-warning']) ?>\n" .*/
+/*            "    <?= Html::a('Delete', ['/$controllerId/delete', 'id' => \$model->{$pk}], ['class' => 'btn btn-danger', 'onclick' => \"return confirm('Delete?');\"]) ?>\n" .*/
+//            "</p>\n\n" .
+//            "<table class=\"table table-bordered\">\n" .
+//            $rows .
+//            "</table>\n";
+//    }
+
     private function buildViewView(string $modelClass, string $controllerId, string $pk, array $cols): string
     {
-        $rows = "";
+        $attrs = "";
         foreach ($cols as $c) {
             $f = (string)($c['Field'] ?? '');
             if ($f === '') continue;
-            $rows .= "<tr><th>{$f}</th><td><?= Html::encode(\$model->{$f}) ?></td></tr>\n";
+            $attrs .= "        '{$f}',\n";
         }
 
         return "<?php\n" .
             "/** @var \$model {$modelClass} */\n\n" .
-            "use app\\helpers\\Html;\n\n" .
+            "use app\\helpers\\Html;\n" .
+            "use app\\helpers\\DetailView;\n\n" .
             "\$this->title = 'View';\n" .
             "?>\n\n" .
             "<h1><?= Html::encode(\$this->title) ?></h1>\n\n" .
@@ -217,10 +243,14 @@ class MakeCrudCommand implements CommandInterface
             "    <?= Html::a('Update', ['/$controllerId/update', 'id' => \$model->{$pk}], ['class' => 'btn btn-warning']) ?>\n" .
             "    <?= Html::a('Delete', ['/$controllerId/delete', 'id' => \$model->{$pk}], ['class' => 'btn btn-danger', 'onclick' => \"return confirm('Delete?');\"]) ?>\n" .
             "</p>\n\n" .
-            "<table class=\"table table-bordered\">\n" .
-            $rows .
-            "</table>\n";
+            "<?= DetailView::widget([\n" .
+            "    'model' => \$model,\n" .
+            "    'attributes' => [\n" .
+            $attrs .
+            "    ],\n" .
+            "]); ?>\n";
     }
+
 
     private function buildCreateView(string $modelClass): string
     {
@@ -281,10 +311,6 @@ class MakeCrudCommand implements CommandInterface
 
         if (strpos($f, 'password') !== false) return 'password';
         if (strpos($f, 'email') !== false) return 'email';
-
-        if (strpos($t, 'int') !== false || strpos($t, 'decimal') !== false || strpos($t, 'float') !== false || strpos($t, 'double') !== false) {
-            return 'number';
-        }
 
         if (strpos($t, 'date') !== false && strpos($t, 'datetime') === false) return 'date';
         if (strpos($t, 'datetime') !== false || strpos($t, 'timestamp') !== false) return 'datetime-local';

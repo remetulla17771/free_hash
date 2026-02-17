@@ -6,7 +6,7 @@ $button = isset($button) ? $button : 'Save';
 
 <?php ActiveForm::begin('post'); ?>
 
-<?= ActiveForm::field($model, 'user_id', ['type' => 'number']) ?>
+<?= ActiveForm::field($model, 'user_id') ?>
 <?= ActiveForm::field($model, 'title') ?>
 <?= ActiveForm::field($model, 'content') ?>
 

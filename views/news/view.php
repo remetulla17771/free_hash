@@ -2,6 +2,7 @@
 /** @var $model app\models\News */
 
 use app\helpers\Html;
+use app\helpers\DetailView;
 
 $this->title = 'View';
 ?>
@@ -14,9 +15,12 @@ $this->title = 'View';
     <?= Html::a('Delete', ['/news/delete', 'id' => $model->id], ['class' => 'btn btn-danger', 'onclick' => "return confirm('Delete?');"]) ?>
 </p>
 
-<table class="table table-bordered">
-<tr><th>id</th><td><?= Html::encode($model->id) ?></td></tr>
-<tr><th>user_id</th><td><?= Html::encode($model->user_id) ?></td></tr>
-<tr><th>title</th><td><?= Html::encode($model->title) ?></td></tr>
-<tr><th>content</th><td><?= Html::encode($model->content) ?></td></tr>
-</table>
+<?= DetailView::widget([
+    'model' => $model,
+    'attributes' => [
+        'id',
+        'user_id',
+        'title',
+        'content',
+    ],
+]); ?>

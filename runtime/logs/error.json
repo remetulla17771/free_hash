@@ -1,5 +1,32 @@
 [
     {
+        "id": 625,
+        "time": "2026-02-17 12:47:51",
+        "code": 500,
+        "type": "TypeError",
+        "message": "Argument 2 passed to app\\ErrorHandler::log() must be of the type int, string given, called in W:\\domains\\auth.loc\\app\\App.php on line 86",
+        "file": "W:\\domains\\auth.loc\\app\\ErrorHandler.php",
+        "line": 111
+    },
+    {
+        "id": 624,
+        "time": "2026-02-17 12:47:46",
+        "code": 500,
+        "type": "TypeError",
+        "message": "Argument 2 passed to app\\ErrorHandler::log() must be of the type int, string given, called in W:\\domains\\auth.loc\\app\\App.php on line 86",
+        "file": "W:\\domains\\auth.loc\\app\\ErrorHandler.php",
+        "line": 111
+    },
+    {
+        "id": 623,
+        "time": "2026-02-17 12:46:06",
+        "code": 500,
+        "type": "TypeError",
+        "message": "Argument 2 passed to app\\ErrorHandler::log() must be of the type int, string given, called in W:\\domains\\auth.loc\\app\\App.php on line 86",
+        "file": "W:\\domains\\auth.loc\\app\\ErrorHandler.php",
+        "line": 111
+    },
+    {
         "id": 622,
         "time": "2026-02-17 09:12:02",
         "code": 500,
