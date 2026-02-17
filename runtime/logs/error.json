@@ -1,5 +1,23 @@
 [
     {
+        "id": 628,
+        "time": "2026-02-17 16:10:35",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined index: pagination",
+        "file": "W:\\domains\\auth.loc\\app\\helpers\\GridView.php",
+        "line": 23
+    },
+    {
+        "id": 627,
+        "time": "2026-02-17 16:10:25",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined index: pagination",
+        "file": "W:\\domains\\auth.loc\\app\\helpers\\GridView.php",
+        "line": 23
+    },
+    {
         "id": 626,
         "time": "2026-02-17 15:32:43",
         "code": 500,

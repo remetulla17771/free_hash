@@ -6,17 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="bd9c7475-b5ab-41bc-ba13-39d0d8c58c7b" name="Changes" comment="Initial commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Query.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Query.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/console/MakeCrudCommand.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/console/MakeCrudCommand.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/controllers/NewsController.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/app/controllers/SiteController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/controllers/SiteController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/helpers/GridView.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/helpers/GridView.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/logs/error.counter" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/logs/error.counter" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/logs/error.json" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/logs/error.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/_form.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/create.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/index.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/update.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/view.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/views/site/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/views/site/index.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -107,7 +100,7 @@
       <option name="presentableId" value="Default" />
       <updated>1769597823659</updated>
       <workItem from="1769597825141" duration="93858000" />
-      <workItem from="1771301708879" duration="17866000" />
+      <workItem from="1771301708879" duration="19353000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />

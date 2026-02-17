@@ -13,6 +13,7 @@ class GridView
         $attributes   = $config['columns'] ?? [];
         $dataProvider = $config['dataProvider'];
         $options      = $config['options'] ?? ['class' => 'table table-bordered'];
+        $pagination = $config['pagination'] ?? null;
 
         $optionsString = self::renderOptions($options);
 
@@ -20,6 +21,10 @@ class GridView
         $html .= self::renderHeader($attributes);
         $html .= self::renderBody($attributes, $dataProvider);
         $html .= "</table>";
+        if($pagination){
+            $html .= LinkPager::widget(['pagination' => $config['pagination']]);
+        }
+
 
         return $html;
     }

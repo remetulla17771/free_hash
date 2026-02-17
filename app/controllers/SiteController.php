@@ -21,12 +21,11 @@ class SiteController extends Controller {
 
         $page = (int)$this->request->get('page');
         $page = max(1, $page);
-        $pageSize = 2;
 
         $query = User::find()->orderBy(['id' => 'DESC']);
 
         $total = $query->count();
-        $pagination = new Pagination($total, $pageSize, $page);
+        $pagination = new Pagination($total, 3, $page);
 
         $models = $query
             ->limit($pagination->pageSize)

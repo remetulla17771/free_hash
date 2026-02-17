@@ -16,6 +16,7 @@ use app\helpers\Modal;
 
 <?= GridView::widget([
     'dataProvider' => $models,
+    'pagination' => $pagination,
     'columns' => [
         [
             'label' => 'Select',
@@ -50,7 +51,6 @@ use app\helpers\Modal;
 ]);
 ?>
 
-<?= \app\helpers\LinkPager::widget(['pagination' => $pagination]) ?>
 
 
 <div>
