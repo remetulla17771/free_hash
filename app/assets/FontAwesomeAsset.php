@@ -8,19 +8,19 @@ use app\helpers\Html;
 class FontAwesomeAsset extends AssetBundle
 {
     public $basePath = '/assets';
-    public $baseUrl = '/assets';
+    public $baseUrl = '/assets/fontawesome';
 
     public $css = [
-        'fontawesome/index.css', // Example of using a CDN
-        'fontawesome/brands.css', // Example of using a CDN
-        'fontawesome/svg.css', // Example of using a CDN
+        'index.css', // Example of using a CDN
+        'brands.css', // Example of using a CDN
+        'svg.css', // Example of using a CDN
 
     ];
 
     public $js = [
-        'fontawesome/index.js',
-        'fontawesome/brands.js',
-        'fontawesome/fw.js',
+        'index.js',
+        'brands.js',
+        'fw.js',
     ];
 
     public static function icon($icon)

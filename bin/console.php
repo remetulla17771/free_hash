@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+
+require __DIR__ . '/../app/ErrorHandler.php';
+
+use app\ErrorHandler;
+
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
+
+// автолоад как в web/index.php
+spl_autoload_register(function ($class) {
+    $prefix = 'app\\';
+    $baseDir = __DIR__ . '/../app/';
+    if (strncmp($prefix, $class, strlen($prefix)) !== 0) return;
+
+    $relativeClass = substr($class, strlen($prefix));
+    $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+    if (file_exists($file)) require $file;
+});
+
+$app = new app\console\ConsoleApplication();
+exit($app->run($argv));

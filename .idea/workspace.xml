@@ -4,7 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bd9c7475-b5ab-41bc-ba13-39d0d8c58c7b" name="Changes" comment="Initial commit" />
+    <list default="true" id="bd9c7475-b5ab-41bc-ba13-39d0d8c58c7b" name="Changes" comment="Initial commit">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/App.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/App.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/assets/AppAsset.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/assets/AppAsset.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/assets/FontAwesomeAsset.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/assets/FontAwesomeAsset.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/runtime/logs/error.counter" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/logs/error.counter" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/runtime/logs/error.json" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/logs/error.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/assets/css/site.css" beforeDir="false" afterPath="$PROJECT_DIR$/web/assets/css/site.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/assets/js/site.js" beforeDir="false" afterPath="$PROJECT_DIR$/app/vendor/free_hash/js/site.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,6 +28,7 @@
       <list>
         <option value="CSS File" />
         <option value="JavaScript File" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -40,15 +51,19 @@
   &quot;associatedIndex&quot;: 7
 }</component>
   <component name="ProjectId" id="38sopfcylsP8nTlDPoAhXRIQEaC" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Дамир/dist/OpenServer/domains/auth.loc/web/assets/webfonts&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Дамир/dist/OpenServer/domains/auth.loc/web/assets/js&quot;,
     &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -61,11 +76,14 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\web\assets\js" />
       <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\web\assets\webfonts" />
       <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\views\error" />
       <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\views\layouts" />
       <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\app\messages" />
-      <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\views\site" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Дамир\dist\OpenServer\domains\auth.loc\app\vendor\free_hash\js" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -84,7 +102,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1769597823659</updated>
-      <workItem from="1769597825141" duration="86077000" />
+      <workItem from="1769597825141" duration="93858000" />
+      <workItem from="1771301708879" duration="5414000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />

@@ -361,6 +361,77 @@ app/config/db.local.php
 2) Дать 777 права на все файлы
 ---
 
+
+## Console Gii (консольный генератор кода)
+
+В проекте есть консольная утилита, которая генерирует заготовки кода “как Yii2 Gii”, но **без веб-интерфейса**:
+
+- `make:controller` — контроллер + папка views
+- `make:model` — ActiveRecord модель по таблице
+- `make:crud` — CRUD (контроллер + views) по модели/таблице
+
+### Запуск
+
+Показать список команд:
+
+```bash
+php bin/console.php help
+```
+
+### make:controller
+
+```bash
+php bin/console.php make:controller Site
+```
+
+Создаст:
+- `app/controllers/SiteController.php`
+- `views/site/index.php`
+
+Опции:
+- `--force` — перезаписать файлы, если уже существуют.
+
+### make:model
+
+Генерация модели по таблице (используется `DESCRIBE`):
+
+```bash
+php bin/console.php make:model User --table=user
+```
+
+Создаст:
+- `app/models/User.php`
+
+
+### make:crud
+
+Генерация CRUD по таблице:
+
+```bash
+php bin/console.php make:crud Post --table=post
+```
+
+Создаст:
+- `app/controllers/PostController.php`
+- `views/post/index.php`
+- `views/post/view.php`
+- `views/post/create.php`
+- `views/post/update.php`
+- `views/post/_form.php`
+
+Опции:
+- `--table=...` — **обязательно**
+- `--controller=Имя` — имя контроллера (без `Controller`), например `--controller=AdminPost`
+- `--modelNamespace=app\models` — где искать модель (по умолчанию `app\models`)
+- `--force`
+
+> Важно: `make:model` и `make:crud` требуют рабочее подключение к БД (`Db::getInstance()`), иначе не смогут прочитать схему таблицы.
+
+---
+
+
+
+
 ## Лицензия
 
 Apache License 2.0 — см. файл `LICENSE`.

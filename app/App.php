@@ -2,9 +2,9 @@
 
 namespace app;
 
-use app\controllers\PrivacyController;
 use app\helpers\I18n;
 use app\ErrorHandler;
+
 
 class App
 {

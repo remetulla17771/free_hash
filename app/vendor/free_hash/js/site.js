@@ -50,7 +50,7 @@ if(modals){
     })
 }
 
-String.prototype.reverseString = function () {
+window.prototype.reverseString = function () {
     return this.split('').reverse().join('');
 
 
@@ -73,6 +73,7 @@ const Helper = {
 Helper.add('a', 1)
 Helper.add('b', 2)
 Helper.add('c', 3)
+Helper.add('d', 4)
 
 console.log(Helper.get())
 

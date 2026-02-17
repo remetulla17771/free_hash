@@ -20,6 +20,6 @@ class AppAsset extends AssetBundle
 
     public $depends = [
         'app\assets\BootstrapAsset',
-        'app\assets\FontAwesomeAsset',
+        'app\assets\FontAwesomeAsset'
     ];
 }
