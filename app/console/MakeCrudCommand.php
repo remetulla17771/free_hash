@@ -206,12 +206,11 @@ class MakeCrudCommand implements CommandInterface
             "</p>\n\n" .
             "<?= GridView::widget([\n" .
             "    'dataProvider' => \$models,\n" .
+            "    'pagination' => \$pagination,\n" .
             "    'columns' => [\n" .
             $columnsPhp .
             "    ]\n" .
-            "]); ?>\n".
-            "<?= LinkPager::widget(['pagination' => \$pagination]) ?>
-";
+            "]); ?>\n";
     }
 
     private function buildViewView(string $modelClass, string $controllerId, string $pk, array $cols): string

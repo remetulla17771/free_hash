@@ -3,6 +3,7 @@
 /**
  * @var $models app\models\User
  * @var $pagination app\helpers\Pagination
+ * @var $this app\
  */
 
 use app\assets\FontAwesomeAsset;
@@ -13,6 +14,9 @@ use app\helpers\Modal;
 
 ?>
 
+<div>
+    Language: <?= $this->lang->language() ?>
+</div>
 
 <?= GridView::widget([
     'dataProvider' => $models,

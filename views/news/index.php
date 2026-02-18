@@ -18,6 +18,7 @@ $this->title = 'News list';
 
 <?= GridView::widget([
     'dataProvider' => $models,
+    'pagination' => $pagination,
     'columns' => [
         'id',
         'user_id',
@@ -33,4 +34,3 @@ $this->title = 'News list';
         ],
     ]
 ]); ?>
-<?= LinkPager::widget(['pagination' => $pagination]) ?>
