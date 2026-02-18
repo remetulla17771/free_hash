@@ -1,22 +1,20 @@
 <?php
 namespace app\controllers;
-use app\App;
-use app\AuthService;
 use app\Controller;
 use app\helpers\Alert;
 use app\helpers\MetaTagManager;
 use app\helpers\Pagination;
-use app\models\Shezhire;
 use app\models\User;
 use app\Response;
-use app\vendor\privacy\Privacy;
+
 
 
 class SiteController extends Controller {
 
 //    public string $layout = 'new';
     public function actionIndex() {
-        
+
+
         MetaTagManager::register(['asdf' => 'cofg']);
 
         $page = (int)$this->request->get('page');

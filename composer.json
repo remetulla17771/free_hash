@@ -1,0 +1,25 @@
+{
+  "name": "remetulla/tinymvc-php",
+  "description": "Mini MVC framework in Yii2 style",
+  "type": "project",
+  "license": "Apache-2.0",
+  "require": {
+    "php": "^7.4 || ^8.0",
+    "ext-pdo": "*",
+    "ext-json": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "app\\": "app/"
+    }
+  },
+  "scripts": {
+    "console": "php bin/console.php"
+  },
+  "config": {
+    "allow-plugins": {
+      "contao-components/installer": true,
+      "php-http/discovery": true
+    }
+  }
+}

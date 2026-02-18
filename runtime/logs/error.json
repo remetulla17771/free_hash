@@ -1,5 +1,59 @@
 [
     {
+        "id": 634,
+        "time": "2026-02-18 07:37:38",
+        "code": 0,
+        "type": "Error",
+        "message": "Class 'app\\controllers\\Faker\\Factory' not found",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 23
+    },
+    {
+        "id": 633,
+        "time": "2026-02-18 07:29:48",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined variable: dotenv",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 22
+    },
+    {
+        "id": 632,
+        "time": "2026-02-18 07:29:37",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined variable: dotenv",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 22
+    },
+    {
+        "id": 631,
+        "time": "2026-02-18 07:26:59",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined variable: dotenv",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 21
+    },
+    {
+        "id": 630,
+        "time": "2026-02-18 07:26:57",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined variable: dotenv",
+        "file": "W:\\domains\\auth.loc\\app\\controllers\\SiteController.php",
+        "line": 21
+    },
+    {
+        "id": 629,
+        "time": "2026-02-18 07:20:02",
+        "code": 500,
+        "type": "Error",
+        "message": "Class 'app\\App' not found",
+        "file": "W:\\domains\\auth.loc\\web\\index.php",
+        "line": 35
+    },
+    {
         "id": 628,
         "time": "2026-02-17 16:10:35",
         "code": 500,
