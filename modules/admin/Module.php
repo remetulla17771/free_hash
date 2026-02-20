@@ -1,6 +1,6 @@
 <?php
 
-namespace modules\graves;
+namespace modules\admin;
 
 class Module
 {

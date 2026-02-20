@@ -9,7 +9,6 @@ use app\helpers\NavBar;
 
 MetaTagManager::register(['name' => 'description', 'content' => 'Desc']);
 
-
 ?>
 <!DOCTYPE html>
 <html lang="<?= $this->lang->language() ?>">

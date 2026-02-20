@@ -1,6 +1,6 @@
 <?php
 
-namespace modules\graves\controllers;
+namespace modules\admin\controllers;
 
 use app\Controller;
 

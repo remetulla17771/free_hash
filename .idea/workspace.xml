@@ -6,25 +6,30 @@
   <component name="ChangeListManager">
     <list default="true" id="bd9c7475-b5ab-41bc-ba13-39d0d8c58c7b" name="Changes" comment="Initial commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Controller.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Controller.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Router.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Router.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/console/ConsoleApplication.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/console/ConsoleApplication.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/console/MakeCrudCommand.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/console/MakeCrudCommand.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/controllers/NewsController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/controllers/SiteController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/controllers/SiteController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/UrlManager.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/UrlManager.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bin/console.php" beforeDir="false" afterPath="$PROJECT_DIR$/bin/console.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/assign/Module.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/assign/controllers/DefaultController.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/assign/views/default/index.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/assign/views/layouts/main.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/Module.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/controllers/DefaultController.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/controllers/NewsController.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/default/index.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/layouts/main.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/news/_form.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/news/create.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/news/index.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/news/update.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/grave/views/news/view.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/graves/Module.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/graves/controllers/SiteController.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/graves/views/layouts/main.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/graves/views/site/index.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/logs/error.counter" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/logs/error.counter" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/logs/error.json" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/logs/error.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/composer/autoload_classmap.php" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/composer/autoload_classmap.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/composer/autoload_psr4.php" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/composer/autoload_psr4.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/composer/autoload_static.php" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/composer/autoload_static.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/_form.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/create.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/index.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/update.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/views/news/view.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/web/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/views/layouts/main.php" beforeDir="false" afterPath="$PROJECT_DIR$/views/layouts/main.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/views/site/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/views/site/index.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +121,7 @@
       <option name="presentableId" value="Default" />
       <updated>1769597823659</updated>
       <workItem from="1769597825141" duration="93858000" />
-      <workItem from="1771301708879" duration="27430000" />
+      <workItem from="1771301708879" duration="28118000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />

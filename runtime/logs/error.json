@@ -1,5 +1,113 @@
 [
     {
+        "id": 671,
+        "time": "2026-02-20 08:54:25",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionRecursion",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
+        "id": 670,
+        "time": "2026-02-20 08:50:25",
+        "code": 500,
+        "type": "Error",
+        "message": "Call to undefined method app\\UrlManager::pasteUrlLanguage()",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 45
+    },
+    {
+        "id": 669,
+        "time": "2026-02-20 08:50:25",
+        "code": 0,
+        "type": "Error",
+        "message": "Call to undefined method app\\UrlManager::pasteUrlLanguage()",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 45
+    },
+    {
+        "id": 668,
+        "time": "2026-02-20 08:50:11",
+        "code": 500,
+        "type": "Error",
+        "message": "Call to undefined method app\\UrlManager::pasteUrlLanguage()",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 45
+    },
+    {
+        "id": 667,
+        "time": "2026-02-20 08:50:11",
+        "code": 0,
+        "type": "Error",
+        "message": "Call to undefined method app\\UrlManager::pasteUrlLanguage()",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 45
+    },
+    {
+        "id": 666,
+        "time": "2026-02-20 08:48:35",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionGri",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
+        "id": 665,
+        "time": "2026-02-20 08:48:28",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\UrlManager::$modules",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 12
+    },
+    {
+        "id": 664,
+        "time": "2026-02-20 08:48:28",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionGri",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
+        "id": 663,
+        "time": "2026-02-20 08:48:23",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionGri",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
+        "id": 662,
+        "time": "2026-02-20 08:48:19",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionGri",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
+        "id": 661,
+        "time": "2026-02-20 08:47:56",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionGri",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
+        "id": 660,
+        "time": "2026-02-20 08:47:46",
+        "code": 404,
+        "type": "Exception",
+        "message": "Action not found: actionGri",
+        "file": "W:\\domains\\auth.loc\\app\\Router.php",
+        "line": 67
+    },
+    {
         "id": 659,
         "time": "2026-02-20 08:37:55",
         "code": 404,

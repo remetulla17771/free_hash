@@ -5,51 +5,52 @@ use app\helpers\I18n;
 
 class UrlManager
 {
+    public ?string $module = null;
+
     public string $controller = 'site';
     public string $action = 'index';
     protected array $params = [];
 
-
     public function __construct()
     {
         $this->parse();
-//        self::parseRequest($_SERVER['REQUEST_URI']);
     }
 
     protected function parse(): void
     {
-        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $path = trim($path, '/');
+        // сначала режем язык (если есть), получаем сегменты без /ru
+        $segments = self::parseRequest($_SERVER['REQUEST_URI']);
 
-        if ($path === '') {
+        if (empty($segments)) {
             return;
         }
 
-        $segments = explode('/', $path);
+        // module = первый сегмент, если есть папка modules/<module>
+        $candidate = $segments[0] ?? null;
+        if ($candidate && $this->isModuleId($candidate) && $this->moduleExists($candidate)) {
+            $this->module = array_shift($segments);
+        } else {
+            $this->module = null;
+        }
 
-        $this->controller = array_shift($segments);
-        $this->action = $segments ? array_shift($segments) : 'index';
-        $this->params = $segments;
-
+        $this->controller = $segments ? array_shift($segments) : 'site';
+        $this->action     = $segments ? array_shift($segments) : 'index';
+        $this->params     = $segments;
     }
 
-    public function getControllerClass(): string
+    private function isModuleId(string $id): bool
     {
-        return 'app\\controllers\\' . ucfirst($this->controller) . 'Controller';
+        return (bool)preg_match('/^[A-Za-z0-9_]+$/', $id);
     }
 
-    public function getActionMethod(): string
+    private function moduleExists(string $id): bool
     {
-        return 'action' . ucfirst($this->action);
+        // UrlManager лежит в /app, модули в /modules
+        $modulesDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'modules';
+        return is_dir($modulesDir . DIRECTORY_SEPARATOR . $id);
     }
 
-    public function getParams(): array
-    {
-        return $this->params;
-    }
-
-
-
+    // язык
     public static array $languages = ['ru', 'en', 'kz'];
     public static string $defaultLanguage = 'ru';
 
@@ -66,39 +67,26 @@ class UrlManager
 
         I18n::$language = $lang;
 
-
-
-        return $segments;
+        return $segments; // ВАЖНО: модуль НЕ вырезаем, он нужен Router-у
     }
-
 
     public function pasteUrlLanguage($lang)
     {
         $urlString = $_SERVER['REQUEST_URI'];
 
-        // Разбираем URL на путь и параметры
         $parts = parse_url($urlString);
         $query = [];
         if (isset($parts['query'])) {
             parse_str($parts['query'], $query);
         }
 
-        // Добавляем или обновляем lang из параметра функции
         if ($lang) {
             $query['lang'] = $lang;
         }
 
-        // Собираем URL обратно
         $newQuery = http_build_query($query);
         $urlString = $parts['path'] . ($newQuery ? '?' . $newQuery : '');
 
         return $urlString;
     }
-
-
-
-
-
-
-
 }

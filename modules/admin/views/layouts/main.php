@@ -6,7 +6,6 @@ use app\helpers\Alert;
 use app\helpers\MetaTagManager;
 use app\helpers\NavBar;
 
-
 ?>
 <!DOCTYPE html>
 <html lang="<?= $this->lang->language() ?>">
@@ -29,7 +28,20 @@ use app\helpers\NavBar;
         'options' => ['class' => 'navbar-expand-md navbar-dark bg-dark fixed-top'],
         'ulClass' => 'navbar-nav navbar-collapse justify-content-end nav',
         'items' => [
-            ['label' => 'Home', 'url' => '/graves/site/index'],
+            ['label' => 'Home', 'url' => '/admin/site/index'],
+            [
+                'label' => 'Lang ('.$this->lang->language().")",
+                'items' => [
+                    [
+                        'label' => 'ru',
+                        'url' => $this->urlManager->pasteUrlLanguage('ru')
+                    ],
+                    [
+                        'label' => 'kk',
+                        'url' => $this->urlManager->pasteUrlLanguage('kk')
+                    ],
+                ]
+            ],
             $this->user->isGuest() ? ['label' => 'Login', 'url' => '/site/login'] : ['label' => $this->user->identity('login') . " (Logout)", 'url' => '/site/logout']
         ],
     ]);
