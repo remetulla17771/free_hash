@@ -6,7 +6,7 @@ $button = isset($button) ? $button : 'Save';
 
 <?php ActiveForm::begin('post'); ?>
 
-<?= ActiveForm::field($model, 'user_id') ?>
+<?= ActiveForm::dropdown($model, 'user_id', \app\helpers\ArrayHelper::map(\app\models\User::find()->all(), 'id', 'login')) ?>
 <?= ActiveForm::field($model, 'title') ?>
 <?= ActiveForm::field($model, 'content') ?>
 

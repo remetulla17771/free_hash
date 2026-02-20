@@ -16,4 +16,10 @@ class News extends ActiveRecord
     {
         return 'news';
     }
+
+//    public function getUser()
+//    {
+//        return $this->hasOne(User::class, ['id' => $this->user_id]);
+//    }
+
 }

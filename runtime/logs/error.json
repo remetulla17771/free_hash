@@ -1,5 +1,374 @@
 [
     {
+        "id": 712,
+        "time": "2026-02-20 12:17:53",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Trying to get property 'id' of non-object",
+        "file": "W:\\domains\\auth.loc\\views\\site\\index.php",
+        "line": 44
+    },
+    {
+        "id": 711,
+        "time": "2026-02-20 12:17:39",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined offset: 0",
+        "file": "W:\\domains\\auth.loc\\views\\site\\index.php",
+        "line": 44
+    },
+    {
+        "id": 710,
+        "time": "2026-02-20 12:17:14",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined offset: 0",
+        "file": "W:\\domains\\auth.loc\\views\\site\\index.php",
+        "line": 44
+    },
+    {
+        "id": 709,
+        "time": "2026-02-20 12:14:36",
+        "code": 0,
+        "type": "RuntimeException",
+        "message": "Relation key '8' is not loaded",
+        "file": "W:\\domains\\auth.loc\\app\\ActiveRecord.php",
+        "line": 96
+    },
+    {
+        "id": 708,
+        "time": "2026-02-20 12:14:24",
+        "code": 0,
+        "type": "RuntimeException",
+        "message": "Relation key '8' is not loaded",
+        "file": "W:\\domains\\auth.loc\\app\\ActiveRecord.php",
+        "line": 96
+    },
+    {
+        "id": 707,
+        "time": "2026-02-20 12:13:22",
+        "code": 0,
+        "type": "RuntimeException",
+        "message": "Relation key '8' is not loaded",
+        "file": "W:\\domains\\auth.loc\\app\\ActiveRecord.php",
+        "line": 96
+    },
+    {
+        "id": 706,
+        "time": "2026-02-20 12:08:21",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 705,
+        "time": "2026-02-20 12:07:54",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 704,
+        "time": "2026-02-20 12:07:36",
+        "code": 0,
+        "type": "Error",
+        "message": "Cannot use object of type app\\models\\User as array",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 703,
+        "time": "2026-02-20 12:06:57",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 702,
+        "time": "2026-02-20 12:06:44",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 701,
+        "time": "2026-02-20 12:06:36",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 700,
+        "time": "2026-02-20 12:06:33",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 699,
+        "time": "2026-02-20 12:06:25",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 698,
+        "time": "2026-02-20 12:06:16",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 697,
+        "time": "2026-02-20 12:06:13",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 696,
+        "time": "2026-02-20 12:06:04",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 695,
+        "time": "2026-02-20 12:05:52",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 694,
+        "time": "2026-02-20 12:05:45",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 693,
+        "time": "2026-02-20 12:04:39",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 692,
+        "time": "2026-02-20 12:04:09",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 691,
+        "time": "2026-02-20 12:02:39",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 690,
+        "time": "2026-02-20 12:01:56",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 689,
+        "time": "2026-02-20 12:01:54",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 688,
+        "time": "2026-02-20 12:01:26",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 687,
+        "time": "2026-02-20 11:59:44",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 686,
+        "time": "2026-02-20 11:59:41",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 685,
+        "time": "2026-02-20 11:59:32",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 684,
+        "time": "2026-02-20 11:58:50",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 683,
+        "time": "2026-02-20 11:57:36",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 682,
+        "time": "2026-02-20 11:57:17",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 681,
+        "time": "2026-02-20 11:56:00",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 680,
+        "time": "2026-02-20 11:55:58",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 679,
+        "time": "2026-02-20 11:55:47",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 678,
+        "time": "2026-02-20 11:55:44",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 677,
+        "time": "2026-02-20 11:55:03",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 676,
+        "time": "2026-02-20 11:54:27",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 675,
+        "time": "2026-02-20 11:54:12",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 674,
+        "time": "2026-02-20 11:53:13",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 673,
+        "time": "2026-02-20 11:53:10",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
+        "id": 672,
+        "time": "2026-02-20 11:52:31",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\models\\User::$id",
+        "file": "W:\\domains\\auth.loc\\app\\models\\User.php",
+        "line": 31
+    },
+    {
         "id": 671,
         "time": "2026-02-20 08:54:25",
         "code": 404,

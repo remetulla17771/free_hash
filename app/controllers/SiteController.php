@@ -14,9 +14,6 @@ class SiteController extends Controller {
 //    public string $layout = 'new';
     public function actionIndex() {
 
-
-        MetaTagManager::register(['asdf' => 'cofg']);
-
         $page = (int)$this->request->get('page');
         $page = max(1, $page);
 
@@ -29,6 +26,7 @@ class SiteController extends Controller {
             ->limit($pagination->pageSize)
             ->offset($pagination->getOffset())
             ->all();
+
 
         return $this->render('index', [
             'models' => $models,

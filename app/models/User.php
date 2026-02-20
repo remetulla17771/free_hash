@@ -28,7 +28,7 @@ class User extends ActiveRecord implements Auth
 
     public function getId()
     {
-        return $this->id;
+        return $this->getPrimaryKey('id');
     }
 
     /* ========== Password ========== */
@@ -37,4 +37,10 @@ class User extends ActiveRecord implements Auth
     {
         return $password === $this->password;
     }
+
+    public function getNews()
+    {
+        return $this->hasMany(News::class, ['user_id' => 'id']);
+    }
+
 }

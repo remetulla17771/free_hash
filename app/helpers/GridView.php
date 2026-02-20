@@ -79,6 +79,7 @@ class GridView
 
     protected static function getValue($model, string $attribute): string
     {
+
         if (is_array($model)) {
             $value = $model[$attribute] ?? '';
         } else {

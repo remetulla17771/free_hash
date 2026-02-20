@@ -12,7 +12,7 @@ use app\helpers\Html;
 use app\helpers\Modal;
 
 
-
+//$this->dd($models);
 ?>
 
 <div>
@@ -38,6 +38,24 @@ use app\helpers\Modal;
         'login',
         'password',
         [
+            'label' => 'News',
+            'value' => function ($data) {
+                $news = $data->news;
+
+                if($news){
+                    $str = '';
+                    foreach ($news as $n){
+
+                        $str .= $n->id . ") " . $n->title . '<br>';
+
+                    }
+
+                    return $str;
+                }
+
+            }
+        ],
+        [
             'attribute' => 'token',
             'value' => function ($data) {
                 return "Token: " . ($data->token + 1);
@@ -55,7 +73,6 @@ use app\helpers\Modal;
     ]
 ]);
 ?>
-
 
 
 <div>
