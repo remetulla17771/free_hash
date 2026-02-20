@@ -4,7 +4,6 @@ use app\helpers\DetailView;
 use app\helpers\Html;
 
 
-
 ?>
 <div class="bet-view">
 
@@ -23,10 +22,13 @@ use app\helpers\Html;
         'attributes' => [
             'id',
             [
-                    'attribute' => 'login',
+                'attribute' => 'token'
+            ],
+            [
+                'attribute' => 'login',
                 'label' => 'lll',
                 'value' => function ($data) {
-                        return $data->login;
+                    return $data->login;
                 }
             ]
         ],

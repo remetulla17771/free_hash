@@ -50,9 +50,11 @@ class MakeModelCommand implements CommandInterface
         $targetFile = $targetDir . DIRECTORY_SEPARATOR . $class . '.php';
 
         $phpdoc = $this->buildPhpDoc($cols);
+        $labels = $this->buildAttributeLabels($cols);
 
         $code =
-            "<?php\n\n" .
+            "<?php\n" .
+            "declare(strict_types=1);\n\n" .
             "namespace {$namespace};\n\n" .
             "use app\\ActiveRecord;\n\n" .
             $phpdoc . "\n" .
@@ -61,6 +63,12 @@ class MakeModelCommand implements CommandInterface
             "    public static function tableName(): string\n" .
             "    {\n" .
             "        return '{$table}';\n" .
+            "    }\n\n" .
+            "    public function attributeLabels(): array\n" .
+            "    {\n" .
+            "        return [\n" .
+            $labels .
+            "        ];\n" .
             "    }\n" .
             "}\n";
 
@@ -68,6 +76,21 @@ class MakeModelCommand implements CommandInterface
 
         $out->line("OK: {$targetFile}");
         return 0;
+    }
+
+    private function buildAttributeLabels(array $cols): string
+    {
+        $lines = "";
+        foreach ($cols as $c) {
+            $f = (string)($c['Field'] ?? '');
+            if ($f === '') continue;
+
+            // Humanize: created_at -> Created At
+            $label = ucwords(str_replace('_', ' ', $f));
+
+            $lines .= "            '{$f}' => '{$label}',\n";
+        }
+        return $lines;
     }
 
     private function buildPhpDoc(array $cols): string

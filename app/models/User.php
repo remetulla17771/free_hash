@@ -16,7 +16,8 @@ class User extends ActiveRecord implements Auth
     {
         return [
             'login' => 'Логин',
-            'password' => 'Пароль'
+            'password' => 'Пароль',
+            'token' => 'Токен'
         ];
     }
 

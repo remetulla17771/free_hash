@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace app\models;
 
@@ -17,17 +18,13 @@ class News extends ActiveRecord
         return 'news';
     }
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
+            'id' => 'Id',
             'user_id' => 'Пользователь',
-            'title' => 'Название'
+            'title' => 'Title',
+            'content' => 'Content',
         ];
     }
-
-//    public function getUser()
-//    {
-//        return $this->hasOne(User::class, ['id' => $this->user_id]);
-//    }
-
 }

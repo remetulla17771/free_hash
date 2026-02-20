@@ -1,5 +1,41 @@
 [
     {
+        "id": 732,
+        "time": "2026-02-20 14:53:43",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\AuthService::$identity",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 12
+    },
+    {
+        "id": 731,
+        "time": "2026-02-20 14:53:43",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\AuthService::$identity",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 12
+    },
+    {
+        "id": 730,
+        "time": "2026-02-20 14:53:05",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\controllers\\ErrorController::$auth",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 12
+    },
+    {
+        "id": 729,
+        "time": "2026-02-20 14:53:05",
+        "code": 500,
+        "type": "ErrorException",
+        "message": "Undefined property: app\\controllers\\SiteController::$auth",
+        "file": "W:\\domains\\auth.loc\\views\\layouts\\main.php",
+        "line": 12
+    },
+    {
         "id": 728,
         "time": "2026-02-20 13:48:47",
         "code": 0,

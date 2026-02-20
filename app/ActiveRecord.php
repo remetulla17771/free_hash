@@ -9,6 +9,8 @@ abstract class ActiveRecord
 
     abstract public static function tableName(): string;
 
+    abstract public function attributeLabels();
+
 //    public function __get($name)
 //    {
 //        return $this->attributes[$name] ?? null;
