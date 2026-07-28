@@ -15,7 +15,7 @@ class MakeCommand implements CommandInterface
         $name = (string)$in->arg(0, '');
 
         if ($name === '') {
-            $out->line("Usage: php bin/console.php make:command {User} --table=user [--force]");
+            $out->line("Usage: php bin/console.php make:command {CommandName} [--force]");
             return 0;
         }
         $nameIsUpper = ucFirst($name);
