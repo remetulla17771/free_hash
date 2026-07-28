@@ -1,18 +1,8 @@
 .idea
-
 runtime/logs
-
 vendor
-
+.env
 auth.loc.rar
-app/models/Podman.php
-app/models/Shezhire.php
-app/models/News.php
-
-app/controllers/NewsController.php
-app/controllers/PartyController.php
-app/controllers/TestController.php
-
 app.json
 
-.gitignore
+app/models/Podman.php
