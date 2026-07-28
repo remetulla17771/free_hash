@@ -5,6 +5,7 @@ use app\helpers\Alert;
 use app\helpers\MetaTagManager;
 use app\helpers\Pagination;
 use app\models\News;
+use app\models\Podman;
 use app\models\User;
 use app\Response;
 use Faker\Factory;
@@ -50,11 +51,12 @@ class SiteController extends Controller {
 
         for ($i = 0; $i < 5; $i++){
 
-            $model = new News();
+            $model = new Podman();
 
-            $model->user_id = 8;
-            $model->title = $faker->title();
-            $model->content = $faker->text(150);
+            $model->title_ru = $faker->creditCardNumber();
+            $model->title_kk = $faker->title();
+            $model->content_ru = $faker->text(550);
+            $model->content_kk = $faker->text(550);
             $model->save();
 
         }
@@ -71,7 +73,7 @@ class SiteController extends Controller {
         ]);
     }
 
-    public function actionAdd()
+    public function actionCreate()
     {
 
         if($this->user->isGuest()){
@@ -86,7 +88,7 @@ class SiteController extends Controller {
 
         }
 
-        return $this->render('add', [
+        return $this->render('create', [
             'model' => $model
         ]);
 

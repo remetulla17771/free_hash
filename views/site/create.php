@@ -3,7 +3,7 @@
 
 use app\helpers\ActiveForm;
 
-$this->title = "Update User";
+$this->title = "Create User";
 
 ?>
 <h1>Create</h1>
@@ -22,6 +22,6 @@ $this->title = "Update User";
 
 
 
-<?= ActiveForm::submitButton('Update', ['class' => 'btn btn-primary mt-3']) ?>
+<?= ActiveForm::submitButton('Create', ['class' => 'btn btn-primary mt-3']) ?>
 
 <?php ActiveForm::end(); ?>

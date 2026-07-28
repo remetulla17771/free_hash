@@ -8,4 +8,6 @@ interface CommandInterface
     public function name(): string;
     public function description(): string;
     public function execute(Input $in, Output $out): int;
+
+//    private function writeFile(string $path, string $content, bool $force): void;
 }

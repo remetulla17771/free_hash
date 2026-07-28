@@ -78,6 +78,7 @@ class Response
         if (is_array($url)) {
             $url = self::buildUrl($url, $controllerName);
         }
+        else $url = $url;
 
         $res->setHeader('Location', $url);
         return $res;

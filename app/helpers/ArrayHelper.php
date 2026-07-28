@@ -102,4 +102,20 @@ class ArrayHelper
     {
         return array_filter($array, static fn($v) => $v !== null);
     }
+
+
+    public static function convertObjectToArray($model, $name, $content){
+        $a = "app\models\\$model";
+        $m = $model::find()->all();
+        $arr = [];
+
+        foreach ($m as $m){
+            $arr[$m->id]['name'] = $m->$name;
+            $arr[$m->id]['content'] = $m->$content;
+        }
+
+        return $arr;
+    }
+
+
 }

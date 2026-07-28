@@ -11,7 +11,7 @@ use app\helpers\GridView;
 use app\helpers\Html;
 use app\helpers\Modal;
 
-
+$lang = $this->language->get();
 ?>
 
 <div>
@@ -21,16 +21,7 @@ use app\helpers\Modal;
 <div>
 
     <?= \app\helpers\Tab::widget([
-       'items' => [
-           [
-               'name' => 'Main',
-               'content' => 'lorem ipsum',
-           ],
-           [
-               'name' => 'More',
-               'content' => 'lorem ipsum More',
-           ]
-       ]
+       'items' => \app\helpers\ArrayHelper::convertObjectToArray(\app\models\Podman::class, "title_".$lang, "content_".$lang)
     ]) ?>
 
 </div>
@@ -50,8 +41,8 @@ use app\helpers\Modal;
             }
         ],
         'id',
-        'title',
-        'content',
+        'login',
+        'password',
         [
             'label' => 'News',
             'value' => function ($data) {

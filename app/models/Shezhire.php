@@ -12,10 +12,8 @@ class Shezhire extends ActiveRecord
         return 'shezhire';
     }
 
-    public function toArray(): array
+    public function attributeLabels()
     {
-        return $this->attributes;
+        // TODO: Implement attributeLabels() method.
     }
-
-
 }

@@ -17,6 +17,7 @@ class ConsoleApplication
         $this->register(new MakeMigrationCommand());
         $this->register(new MigrateCommand());
         $this->register(new MakeModuleCommand());
+        $this->register(new MakeCommand());
 
     }
 

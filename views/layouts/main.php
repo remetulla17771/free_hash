@@ -35,7 +35,7 @@ MetaTagManager::register(['name' => 'description', 'content' => 'Desc']);
         'items' => [
             ['label' => 'Home', 'url' => '/'],
             ['label' => 'About', 'url' => '/site/about'],
-            ['label' => 'Create', 'url' => '/site/add'],
+            ['label' => 'Create', 'url' => '/site/create'],
             ['label' => 'Recursion', 'url' => '/site/recursion'],
             [
                 'label' => 'Lang ('.$this->language->get().")",

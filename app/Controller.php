@@ -40,7 +40,7 @@ class Controller extends App
         return '/' . $path;
     }
 
-    public function redirect(array $url, int $status = 302)
+    public function redirect($url, int $status = 302)
     {
 
         return $this->response->redirect($url, $status, $this->getControllerName());
