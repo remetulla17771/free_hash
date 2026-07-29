@@ -11,7 +11,6 @@ use app\helpers\GridView;
 use app\helpers\Html;
 use app\helpers\Modal;
 
-$lang = $this->language->get();
 ?>
 
 <div>
@@ -21,7 +20,21 @@ $lang = $this->language->get();
 <div>
 
     <?= \app\helpers\Tab::widget([
-       'items' => \app\helpers\ArrayHelper::convertObjectToArray(\app\models\Podman::class, "title_".$lang, "content_".$lang)
+        'items' => [
+            [
+                'title' => 'Tab 1',
+                'content' => 'Tab 1 Content',
+            ],
+            [
+                'title' => 'Tab 2',
+                'content' => 'Tab 2 Content',
+            ],
+            [
+                'title' => 'Tab 3',
+                'content' => 'Tab 3 Content',
+            ]
+
+        ]
     ]) ?>
 
 </div>
@@ -136,12 +149,13 @@ Modal window 2
 
     class BankAccount {
         amount
+
         // Конструктор для инициализации пользователя в аккаунте
         constructor(user) {
             this.user = user;
         }
 
-        setAmount(amount){
+        setAmount(amount) {
             this.amount = amount
         }
     }

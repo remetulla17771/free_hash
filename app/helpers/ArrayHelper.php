@@ -104,14 +104,15 @@ class ArrayHelper
     }
 
 
-    public static function convertObjectToArray($model, $name, $content){
+    public static function convertObjectToArray($model, $name, $content, $key = 'id'){
         $a = "app\models\\$model";
         $m = $model::find()->all();
         $arr = [];
 
         foreach ($m as $m){
-            $arr[$m->id]['name'] = $m->$name;
-            $arr[$m->id]['content'] = $m->$content;
+            $arr[$m->$key]['id'] = $m->$key;
+            $arr[$m->$key]['name'] = $m->$name;
+            $arr[$m->$key]['content'] = $m->$content;
         }
 
         return $arr;

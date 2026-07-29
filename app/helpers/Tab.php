@@ -8,6 +8,7 @@ class Tab extends WidgetManager
 {
     public static function widget($options)
     {
+
         if (empty($options['items'])) return '';
 
         $id = $options['id'] ?? ('tab_' . substr(md5((string)mt_rand()), 0, 8));
@@ -26,9 +27,11 @@ class Tab extends WidgetManager
             $active = ($i === 0);
             $btnClass = 'nav-link' . ($active ? ' active' : '');
             $paneClass = 'tab-pane fade' . ($active ? ' show active' : '');
+            $dataID = $item['id'] ?? $id;
+
 
             $nav .= "<li class=\"nav-item\" role=\"presentation\">";
-            $nav .= "<button class=\"{$btnClass}\" id=\"{$tabId}\" data-bs-toggle=\"tab\" data-bs-target=\"#{$paneId}\" type=\"button\" role=\"tab\" aria-controls=\"{$paneId}\" aria-selected=\"" . ($active ? 'true' : 'false') . "\">";
+            $nav .= "<button data-id=\"{$dataID}\" class=\"{$btnClass}\" id=\"{$tabId}\" data-bs-toggle=\"tab\" data-bs-target=\"#{$paneId}\" type=\"button\" role=\"tab\" aria-controls=\"{$paneId}\" aria-selected=\"" . ($active ? 'true' : 'false') . "\">";
             $nav .= htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
             $nav .= "</button></li>";
 
