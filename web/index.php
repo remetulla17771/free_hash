@@ -8,6 +8,7 @@ require __DIR__ . '/../app/ErrorHandler.php';
 use app\App;
 use app\ErrorHandler;
 use app\Response;
+use app\ResponseEmitter;
 
 ob_start();
 error_reporting(E_ALL);
@@ -20,7 +21,7 @@ $app = new App();
 $result = $app->run();
 
 if ($result instanceof Response) {
-    $result->send();
+    (new ResponseEmitter())->emit($result);
+} else {
+    echo $result;
 }
-
-echo $result;
