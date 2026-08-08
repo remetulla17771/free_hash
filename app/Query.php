@@ -1,325 +1,193 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
-class Query
+use PDO;
+use RuntimeException;
+
+final class Query
 {
-    private string $modelClass;
-
-    private ?int $limit = null;
-    private int $offset = 0;
-    private array $orderBy = []; // ['id' => 'DESC']
-
-    private array $joins = [];        // [[type, table, on], ...]
-    private array $whereParts = [];   // [['AND'|'OR', '<sql>'], ...]
-
-    // params are split to avoid "Invalid parameter number" when you reset WHERE
+    private ?int $limitValue = null;
+    private int $offsetValue = 0;
+    private array $orderBy = [];
+    private array $joins = [];
+    private array $whereParts = [];
     private array $joinParams = [];
-    private array $condParams = [];
-    private int $paramCounter = 0;
-
-    private ?string $alias = null;
+    private array $conditionParams = [];
+    private int $parameterCounter = 0;
+    private ?string $aliasValue = null;
 
     public ?bool $relMany = null;
 
-    public function __construct(string $modelClass)
-    {
-        $this->modelClass = $modelClass;
-    }
+    public function __construct(private string $modelClass, private ?PDO $pdo = null) {}
 
-    /* =========================
-     * Fluent helpers
-     * ========================= */
-
-    public function alias(string $alias): self
-    {
-        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias)) {
-            throw new \RuntimeException("Bad alias: $alias");
-        }
-        $this->alias = $alias;
-        return $this;
-    }
-
-    public function limit(int $limit): self
-    {
-        $this->limit = max(1, $limit);
-        return $this;
-    }
-
-    public function offset(int $offset): self
-    {
-        $this->offset = max(0, $offset);
-        return $this;
-    }
+    public function alias(string $alias): self { $this->aliasValue = $this->identifier($alias); return $this; }
+    public function limit(int $limit): self { $this->limitValue = max(1, $limit); return $this; }
+    public function offset(int $offset): self { $this->offsetValue = max(0, $offset); return $this; }
 
     public function orderBy(array $columns): self
     {
+        foreach ($columns as $column => $direction) {
+            $this->identifierPath((string) $column);
+            $direction = strtoupper((string) $direction);
+            if (!in_array($direction, ['ASC', 'DESC'], true)) throw new RuntimeException("Invalid order direction: {$direction}");
+        }
         $this->orderBy = $columns;
         return $this;
     }
 
-    public function asMany(): self
-    {
-        $this->relMany = true;
-        return $this;
-    }
+    public function asMany(): self { $this->relMany = true; return $this; }
+    public function asOne(): self { $this->relMany = false; return $this; }
 
-    public function asOne(): self
-    {
-        $this->relMany = false;
-        return $this;
-    }
-
-    /* =========================
-     * JOIN
-     * ========================= */
-
+    /** JOIN table/ON expressions remain trusted SQL for backward compatibility. */
     public function join(string $type, string $table, string $on, array $params = []): self
     {
-        // NOTE: $table and $on are treated as trusted SQL snippets.
+        $type = strtoupper(trim($type));
+        if (!in_array($type, ['INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN'], true)) throw new RuntimeException("Unsupported JOIN type: {$type}");
         $this->joins[] = [$type, $table, $on];
-
-        foreach ($params as $k => $v) {
-            $k = (string)$k;
-            if ($k === '') continue;
-            if ($k[0] !== ':') $k = ':' . $k;
-            $this->joinParams[$k] = $v;
-        }
+        foreach ($params as $key => $value) $this->joinParams[':' . ltrim((string) $key, ':')] = $value;
         return $this;
     }
 
-    public function leftJoin(string $table, string $on, array $params = []): self
-    {
-        return $this->join('LEFT JOIN', $table, $on, $params);
-    }
+    public function leftJoin(string $table, string $on, array $params = []): self { return $this->join('LEFT JOIN', $table, $on, $params); }
 
-    /* =========================
-     * WHERE
-     * ========================= */
-
-    public function where($condition): self
+    public function where(array|string|null $condition): self
     {
         $this->whereParts = [];
-        $this->condParams = [];
-        $this->paramCounter = 0;
+        $this->conditionParams = [];
+        $this->parameterCounter = 0;
         return $this->andWhere($condition);
     }
 
-    public function andWhere($condition): self
+    public function andWhere(array|string|null $condition): self
     {
         $sql = $this->buildCondition($condition);
         if ($sql !== '') $this->whereParts[] = ['AND', $sql];
         return $this;
     }
 
-    public function orWhere($condition): self
+    public function orWhere(array|string|null $condition): self
     {
         $sql = $this->buildCondition($condition);
         if ($sql !== '') $this->whereParts[] = ['OR', $sql];
         return $this;
     }
 
-    private function buildCondition($condition): string
+    private function buildCondition(array|string|null $condition): string
     {
         if ($condition === null || $condition === [] || $condition === '') return '';
+        if (is_string($condition)) throw new RuntimeException('Raw SQL WHERE conditions are not supported.');
 
-        // where(['id'=>1, 'status'=>2]) or with alias: ['u.id'=>1]
-        if (is_array($condition) && $this->isAssoc($condition)) {
+        if ($this->isAssoc($condition)) {
             $parts = [];
-            foreach ($condition as $col => $val) {
-                $colSql = $this->quoteColumn((string)$col);
-
-                if ($val === null) {
-                    $parts[] = "{$colSql} IS NULL";
-                    continue;
-                }
-
-                $ph = $this->nextParam($val);
-                $parts[] = "{$colSql} = {$ph}";
+            foreach ($condition as $column => $value) {
+                $column = $this->identifierPath((string) $column);
+                $parts[] = $value === null ? "{$column} IS NULL" : $column . ' = ' . $this->parameter($value);
             }
             return implode(' AND ', $parts);
         }
 
-        // operator format: ['like','col','x']
-        if (is_array($condition)) {
-            $op = strtolower((string)($condition[0] ?? ''));
-
-            if ($op === 'and' || $op === 'or') {
-                $glue = strtoupper($op);
-                $sub = [];
-                for ($i = 1; $i < count($condition); $i++) {
-                    $s = $this->buildCondition($condition[$i]);
-                    if ($s !== '') $sub[] = "({$s})";
-                }
-                return implode(" {$glue} ", $sub);
+        $operator = strtolower((string) ($condition[0] ?? ''));
+        if (in_array($operator, ['and', 'or'], true)) {
+            $parts = [];
+            for ($i = 1; $i < count($condition); $i++) {
+                $part = $this->buildCondition($condition[$i]);
+                if ($part !== '') $parts[] = '(' . $part . ')';
             }
-
-            if ($op === 'like') {
-                $col = $this->quoteColumn((string)$condition[1]);
-                $val = $condition[2] ?? '';
-                $ph = $this->nextParam('%' . $val . '%');
-                return "{$col} LIKE {$ph}";
-            }
-
-            if ($op === 'between') {
-                $col = $this->quoteColumn((string)$condition[1]);
-                $a = $condition[2] ?? null;
-                $b = $condition[3] ?? null;
-                $ph1 = $this->nextParam($a);
-                $ph2 = $this->nextParam($b);
-                return "{$col} BETWEEN {$ph1} AND {$ph2}";
-            }
-
-            if ($op === 'in') {
-                $col = $this->quoteColumn((string)$condition[1]);
-                $vals = $condition[2] ?? [];
-                if (!is_array($vals) || !$vals) return '0=1';
-
-                $phs = [];
-                foreach ($vals as $v) $phs[] = $this->nextParam($v);
-                return "{$col} IN (" . implode(',', $phs) . ")";
-            }
-
-            // default binary: ['=','col',val], ['>','col',val] ...
-            $allowedOps = ['=', '!=', '<>', '>', '>=', '<', '<='];
-            $rawOp = (string)$condition[0];
-            if (!in_array($rawOp, $allowedOps, true)) {
-                throw new \RuntimeException("Bad operator: {$rawOp}");
-            }
-
-            $col = $this->quoteColumn((string)$condition[1]);
-            $val = $condition[2] ?? null;
-
-            if ($val === null) return "{$col} IS NULL";
-
-            $ph = $this->nextParam($val);
-            return "{$col} {$rawOp} {$ph}";
+            return implode(' ' . strtoupper($operator) . ' ', $parts);
         }
 
-        throw new \RuntimeException('Bad where condition');
+        $column = $this->identifierPath((string) ($condition[1] ?? ''));
+        $value = $condition[2] ?? null;
+
+        return match ($operator) {
+            'like' => $column . ' LIKE ' . $this->parameter('%' . $value . '%'),
+            'between' => $column . ' BETWEEN ' . $this->parameter($condition[2] ?? null) . ' AND ' . $this->parameter($condition[3] ?? null),
+            'in' => $this->buildInCondition($column, $value),
+            '=', '!=', '<>', '>', '>=', '<', '<=' => $value === null
+                ? ($operator === '=' ? "{$column} IS NULL" : "{$column} IS NOT NULL")
+                : $column . ' ' . $operator . ' ' . $this->parameter($value),
+            default => throw new RuntimeException("Bad operator: {$operator}"),
+        };
     }
 
-    private function nextParam($value): string
+    private function buildInCondition(string $column, mixed $values): string
     {
-        $name = ':p' . $this->paramCounter++;
-        $this->condParams[$name] = $value;
+        if (!is_array($values) || $values === []) return '0=1';
+        return $column . ' IN (' . implode(', ', array_map(fn ($value) => $this->parameter($value), $values)) . ')';
+    }
+
+    private function parameter(mixed $value): string
+    {
+        $name = ':p' . $this->parameterCounter++;
+        $this->conditionParams[$name] = $value;
         return $name;
     }
 
-    private function isAssoc(array $a): bool
+    private function isAssoc(array $value): bool { return array_keys($value) !== range(0, count($value) - 1); }
+
+    private function identifier(string $value): string
     {
-        return array_keys($a) !== range(0, count($a) - 1);
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value)) throw new RuntimeException("Invalid SQL identifier: {$value}");
+        return '`' . $value . '`';
     }
 
-    private function quoteColumn(string $name): string
+    private function identifierPath(string $value): string
     {
-        // allow u.id
-        if (!preg_match('/^[A-Za-z0-9_\.]+$/', $name)) {
-            throw new \RuntimeException("Bad column: {$name}");
-        }
-        $parts = explode('.', $name);
-        $parts = array_map(fn($p) => "`{$p}`", $parts);
-        return implode('.', $parts);
+        $parts = explode('.', $value);
+        if ($parts === [] || count($parts) > 2) throw new RuntimeException("Invalid SQL identifier path: {$value}");
+        return implode('.', array_map(fn ($part) => $this->identifier($part), $parts));
     }
 
-    /* =========================
-     * Execution
-     * ========================= */
-
-    public function one()
-    {
-        $this->limit(1);
-        $results = $this->all();
-        return $results[0] ?? null;
-    }
+    public function one(): ?ActiveRecord { $this->limit(1); return $this->all()[0] ?? null; }
 
     public function count(): int
     {
-        $model = $this->modelClass;
-        $table = $model::tableName();
-
-        $sql = "SELECT COUNT(*) AS cnt FROM {$table}" . ($this->alias ? " {$this->alias}" : "");
-
-        if (!empty($this->joins)) {
-            foreach ($this->joins as [$type, $joinTable, $on]) {
-                $sql .= " {$type} {$joinTable} ON {$on}";
-            }
-        }
-
-        if (!empty($this->whereParts)) {
-            $chunks = [];
-            foreach ($this->whereParts as $i => [$bool, $piece]) {
-                $chunks[] = ($i === 0) ? $piece : "{$bool} {$piece}";
-            }
-            $sql .= " WHERE " . implode(' ', $chunks);
-        }
-
-        $stmt = Db::getInstance()->prepare($sql);
-        $stmt->execute($this->allParams());
-
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-        return (int)($row['cnt'] ?? 0);
+        [$sql, $params] = $this->compile('COUNT(*) AS cnt');
+        $statement = $this->connection()->prepare($sql);
+        $statement->execute($params);
+        return (int) ($statement->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
     }
 
     public function all(): array
     {
         $model = $this->modelClass;
-        $table = $model::tableName();
+        [$sql, $params] = $this->compile('*');
+        $statement = $this->connection()->prepare($sql);
+        $statement->execute($params);
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        // 1) SELECT + FROM (+ alias)
-        $sql = "SELECT * FROM {$table}" . ($this->alias ? " {$this->alias}" : "");
-
-        // 2) JOIN
-        if (!empty($this->joins)) {
-            foreach ($this->joins as [$type, $joinTable, $on]) {
-                $sql .= " {$type} {$joinTable} ON {$on}";
-            }
-        }
-
-        // 3) WHERE
-        if (!empty($this->whereParts)) {
-            $chunks = [];
-            foreach ($this->whereParts as $i => [$bool, $piece]) {
-                $chunks[] = ($i === 0) ? $piece : "{$bool} {$piece}";
-            }
-            $sql .= " WHERE " . implode(' ', $chunks);
-        }
-
-        // 4) ORDER BY (supports u.id)
-        if (!empty($this->orderBy)) {
-            $parts = [];
-            foreach ($this->orderBy as $col => $dir) {
-                $colSql = $this->quoteColumn((string)$col);
-                $dir = strtoupper((string)$dir);
-                $dir = ($dir === 'DESC') ? 'DESC' : 'ASC';
-                $parts[] = "{$colSql} {$dir}";
-            }
-            $sql .= " ORDER BY " . implode(', ', $parts);
-        }
-
-        // 5) LIMIT/OFFSET
-        if ($this->limit !== null) {
-            $sql .= " LIMIT " . (int)$this->limit . " OFFSET " . (int)$this->offset;
-        }
-
-        $stmt = Db::getInstance()->prepare($sql);
-        $stmt->execute($this->allParams());
-
-        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        return array_map(function (array $row) use ($model) {
-            $obj = new $model();
-            foreach ($row as $k => $v) {
-                $obj->$k = $v; // goes to ActiveRecord::__set()
-            }
-            return $obj;
+        return array_map(function (array $row) use ($model): ActiveRecord {
+            $instance = new $model();
+            $instance->load($row);
+            return $instance;
         }, $rows);
     }
 
-    private function allParams(): array
+    private function compile(string $select): array
     {
-        // join params + condition params
-        // if same key repeats, condition param wins
-        return $this->joinParams + $this->condParams;
+        $model = $this->modelClass;
+        $sql = 'SELECT ' . $select . ' FROM ' . $this->identifierPath($model::tableName()) . ($this->aliasValue ? ' ' . $this->aliasValue : '');
+
+        foreach ($this->joins as [$type, $table, $on]) $sql .= " {$type} {$table} ON {$on}";
+
+        if ($this->whereParts !== []) {
+            $chunks = [];
+            foreach ($this->whereParts as $index => [$boolean, $part]) $chunks[] = $index === 0 ? $part : $boolean . ' ' . $part;
+            $sql .= ' WHERE ' . implode(' ', $chunks);
+        }
+
+        if ($this->orderBy !== []) {
+            $parts = [];
+            foreach ($this->orderBy as $column => $direction) $parts[] = $this->identifierPath((string) $column) . ' ' . strtoupper((string) $direction);
+            $sql .= ' ORDER BY ' . implode(', ', $parts);
+        }
+
+        if ($this->limitValue !== null) $sql .= ' LIMIT ' . $this->limitValue . ' OFFSET ' . $this->offsetValue;
+        return [$sql, $this->joinParams + $this->conditionParams];
     }
+
+    private function connection(): PDO { return $this->pdo ?? Db::getInstance(); }
 }
