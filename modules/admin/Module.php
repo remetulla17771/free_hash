@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace modules\admin;
 
-class Module
+use app\Module as BaseModule;
+
+class Module extends BaseModule
 {
-    // module marker
 }
