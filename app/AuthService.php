@@ -6,6 +6,7 @@ namespace app;
 
 use app\helpers\Session;
 use app\models\User;
+use app\repositories\UserRepository;
 
 final class AuthService
 {
@@ -14,7 +15,7 @@ final class AuthService
     private ?User $user = null;
 
     public function __construct(
-        private Db $db,
+        private UserRepository $users,
         private Session $session,
     ) {
         $this->loadIdentity();
@@ -22,7 +23,7 @@ final class AuthService
 
     public function login(string $username, string $password): bool
     {
-        $user = User::findByUsername($username, $this->db);
+        $user = $this->users->findByUsername($username);
 
         if (!$user || !$user->validatePassword($password)) {
             return false;
@@ -64,7 +65,7 @@ final class AuthService
             return;
         }
 
-        $this->user = User::findIdentity((int) $id, $this->db);
+        $this->user = $this->users->findIdentity((int) $id);
 
         if ($this->user === null) {
             $this->session->remove(self::SESSION_KEY);
