@@ -4,28 +4,45 @@ declare(strict_types=1);
 
 namespace app;
 
+use InvalidArgumentException;
+
 final class Request
 {
     private ?array $json = null;
-    private array $server;
-    private array $queryParams;
-    private array $postParams;
 
     public function __construct(
-        ?array $server = null,
-        ?array $query = null,
-        ?array $post = null,
+        private array $server = [],
+        private array $queryParams = [],
+        private array $postParams = [],
         private ?string $rawBody = null,
     ) {
-        $this->server = $server ?? $_SERVER;
-        $this->queryParams = $query ?? $_GET;
-        $this->postParams = $post ?? $_POST;
+        if ($this->server === []) {
+            $this->server = $_SERVER;
+        }
+        if ($this->queryParams === []) {
+            $this->queryParams = $_GET;
+        }
+        if ($this->postParams === []) {
+            $this->postParams = $_POST;
+        }
     }
 
     public function getSegments(): array
     {
         $path = trim($this->path(), '/');
-        return $path === '' ? [] : array_values(array_filter(explode('/', $path), static fn ($part) => $part !== ''));
+        if ($path === '') {
+            return [];
+        }
+
+        $segments = [];
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '') {
+                continue;
+            }
+            $segments[] = rawurldecode($segment);
+        }
+
+        return $segments;
     }
 
     public function get(?string $key = null, mixed $default = null): mixed
@@ -55,7 +72,9 @@ final class Request
 
     public function path(): string
     {
-        return (string) (parse_url((string) ($this->server['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+        $uri = (string) ($this->server['REQUEST_URI'] ?? '/');
+        $path = parse_url($uri, PHP_URL_PATH);
+        return is_string($path) && $path !== '' ? $path : '/';
     }
 
     public function rawData(): array
@@ -64,14 +83,23 @@ final class Request
             return $this->json;
         }
 
-        $raw = $this->rawBody ?? file_get_contents('php://input');
+        $raw = $this->rawBody;
+        if ($raw === null) {
+            $raw = file_get_contents('php://input');
+        }
+
         if ($raw === false || trim($raw) === '') {
             return $this->json = [];
         }
 
-        $decoded = json_decode($raw, true);
+        try {
+            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new InvalidArgumentException('Invalid JSON request body.', 400, $e);
+        }
+
         if (!is_array($decoded)) {
-            throw new \InvalidArgumentException('Invalid JSON request body.', 400);
+            throw new InvalidArgumentException('JSON request body must contain an object or array.', 400);
         }
 
         return $this->json = $decoded;
@@ -86,14 +114,7 @@ final class Request
             return $this->server[$key];
         }
 
-        $contentHeaders = [
-            'CONTENT_TYPE' => 'CONTENT_TYPE',
-            'CONTENT_LENGTH' => 'CONTENT_LENGTH',
-            'CONTENT_MD5' => 'CONTENT_MD5',
-        ];
-
-        $key = $contentHeaders[$normalized] ?? $key;
-        return $this->server[$key] ?? $default;
+        return $this->server[$normalized] ?? $default;
     }
 
     public function all(): array
