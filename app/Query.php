@@ -129,7 +129,13 @@ final class Query
         $statement = $this->db->pdo()->prepare($sql);
         $statement->execute($params);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
-        return array_map(function (array $row) use ($model): ActiveRecord { $instance = new $model(); $instance->load($row); return $instance; }, $rows);
+
+        return array_map(function (array $row) use ($model): ActiveRecord {
+            /** @var ActiveRecord $instance */
+            $instance = new $model($this->db);
+            $instance->load($row);
+            return $instance;
+        }, $rows);
     }
 
     private function compile(string $select): array
