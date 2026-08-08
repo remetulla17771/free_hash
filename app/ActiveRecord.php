@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace app;
 
 use InvalidArgumentException;
+use JsonSerializable;
 use RuntimeException;
 
-abstract class ActiveRecord
+abstract class ActiveRecord implements JsonSerializable
 {
     protected array $attributes = [];
     protected array $_relCache = [];
@@ -25,6 +26,16 @@ abstract class ActiveRecord
             throw new RuntimeException('Database dependency is not configured for model ' . static::class . '.');
         }
         return $this->db;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return $this->toArray();
+    }
+
+    public function toArray(): array
+    {
+        return $this->attributes;
     }
 
     public function __get($name)
