@@ -21,7 +21,9 @@ final class Query
 
     public ?bool $relMany = null;
 
-    public function __construct(private string $modelClass, private Db $db) {}
+    public function __construct(private string $modelClass, private Db $db, private ?ModelFactory $modelFactory = null)
+    {
+    }
 
     public function alias(string $alias): self { $this->aliasValue = $this->identifier($alias); return $this; }
     public function limit(int $limit): self { $this->limitValue = max(1, $limit); return $this; }
@@ -129,10 +131,11 @@ final class Query
         $statement = $this->db->pdo()->prepare($sql);
         $statement->execute($params);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $factory = $this->modelFactory ?? new ModelFactory(new ContainerWithDb($this->db));
 
-        return array_map(function (array $row) use ($model): ActiveRecord {
+        return array_map(function (array $row) use ($model, $factory): ActiveRecord {
             /** @var ActiveRecord $instance */
-            $instance = new $model($this->db);
+            $instance = $factory->create($model);
             $instance->load($row);
             return $instance;
         }, $rows);
