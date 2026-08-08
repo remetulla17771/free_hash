@@ -8,65 +8,61 @@ use RuntimeException;
 
 class Router
 {
-    public function __construct(private Request $request)
-    {
+    public function __construct(
+        private Request $request,
+        private ModuleManager $modules,
+    ) {
     }
 
     public function match(): Route
     {
         $segments = $this->request->getSegments();
+        $first = $segments[0] ?? null;
 
-        $moduleId = $segments[0] ?? null;
-        $isModule = $moduleId !== null && preg_match('/^[A-Za-z0-9_]+$/', $moduleId)
-            && is_dir(__DIR__ . '/../modules/' . $moduleId);
-
-        if ($isModule) {
+        if ($first !== null && $this->modules->has($first)) {
+            $module = $this->modules->get($first);
             $controllerName = $segments[1] ?? 'default';
             $actionName = $segments[2] ?? 'index';
-            $controllerClass = 'modules\\' . $moduleId . '\\controllers\\'
-                . $this->toStudly($controllerName) . 'Controller';
-            $parameters = array_slice($segments, 3);
+            $controllerClass = $module->getControllerNamespace() . '\\' . $this->toStudly($controllerName) . 'Controller';
+            $parameterSegments = array_slice($segments, 3);
         } else {
-            $controllerName = $segments[0] ?? 'site';
+            $controllerName = $first ?? 'site';
             $actionName = $segments[1] ?? 'index';
-            $controllerClass = 'app\\controllers\\'
-                . $this->toStudly($controllerName) . 'Controller';
-            $parameters = array_slice($segments, 2);
+            $controllerClass = 'app\\controllers\\' . $this->toStudly($controllerName) . 'Controller';
+            $parameterSegments = array_slice($segments, 2);
         }
 
         if (!class_exists($controllerClass)) {
             throw new RuntimeException('Controller not found: ' . $controllerClass, 404);
         }
 
-        $query = $this->request->query();
-        $parameterNames = $this->parameterNames($controllerClass, $actionName);
-        $named = [];
-
-        foreach ($parameters as $index => $value) {
-            if (isset($parameterNames[$index])) {
-                $named[$parameterNames[$index]] = $value;
-            }
-        }
-
-        foreach ($query as $key => $value) {
-            $named[$key] = $value;
-        }
-
-        return new Route($controllerClass, 'action' . $this->toStudly($actionName), $named);
-    }
-
-    private function parameterNames(string $controllerClass, string $actionName): array
-    {
         $method = 'action' . $this->toStudly($actionName);
         if (!method_exists($controllerClass, $method)) {
             throw new RuntimeException('Action not found: ' . $method, 404);
         }
 
+        $parameterNames = $this->parameterNames($controllerClass, $method);
+        $parameters = [];
+
+        foreach ($parameterSegments as $index => $value) {
+            if (isset($parameterNames[$index])) {
+                $parameters[$parameterNames[$index]] = $value;
+            }
+        }
+
+        foreach ($this->request->query() as $key => $value) {
+            $parameters[$key] = $value;
+        }
+
+        return new Route($controllerClass, $method, $parameters);
+    }
+
+    private function parameterNames(string $controllerClass, string $method): array
+    {
         $names = [];
         foreach ((new \ReflectionMethod($controllerClass, $method))->getParameters() as $parameter) {
             $names[] = $parameter->getName();
         }
-
         return $names;
     }
 
