@@ -6,7 +6,6 @@ namespace app\console;
 
 use app\Container;
 use app\Db;
-use RuntimeException;
 
 final class ConsoleApplication
 {
@@ -31,6 +30,8 @@ final class ConsoleApplication
         $this->register($this->container->get(MigrateCommand::class));
         $this->register($this->container->get(MakeModuleCommand::class));
         $this->register($this->container->get(MakeCommand::class));
+
+        $this->discoverGeneratedCommands();
     }
 
     public function register(CommandInterface $command): void
@@ -39,10 +40,7 @@ final class ConsoleApplication
     }
 
     /** @return array<string, CommandInterface> */
-    public function all(): array
-    {
-        return $this->commands;
-    }
+    public function all(): array { return $this->commands; }
 
     public function run(array $argv): int
     {
@@ -62,6 +60,21 @@ final class ConsoleApplication
         } catch (\Throwable $e) {
             $output->err($e->getMessage());
             return 1;
+        }
+    }
+
+    private function discoverGeneratedCommands(): void
+    {
+        foreach (glob(__DIR__ . '/*Command.php') ?: [] as $file) {
+            $class = __NAMESPACE__ . '\\' . basename($file, '.php');
+            if ($class === HelpCommand::class || !class_exists($class) || !is_subclass_of($class, CommandInterface::class)) continue;
+            try {
+                $command = $this->container->get($class);
+                if ($command instanceof CommandInterface) $this->register($command);
+            } catch (\Throwable) {
+                // A generated command with unresolved dependencies should not prevent
+                // the built-in CLI from starting.
+            }
         }
     }
 }
