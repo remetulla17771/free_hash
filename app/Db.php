@@ -5,23 +5,52 @@ declare(strict_types=1);
 namespace app;
 
 use PDO;
+use RuntimeException;
 
 final class Db
 {
-    private static ?PDO $pdo = null;
-
-    public static function getInstance(): PDO
+    public function __construct(private PDO $pdo)
     {
-        if (self::$pdo instanceof PDO) {
-            return self::$pdo;
+    }
+
+    public function pdo(): PDO
+    {
+        return $this->pdo;
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        $this->pdo->beginTransaction();
+
+        try {
+            $result = $callback($this->pdo);
+            $this->pdo->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public function lastInsertId(): string
+    {
+        return $this->pdo->lastInsertId();
+    }
+
+    public static function fromConfig(array $config): self
+    {
+        foreach (['dsn', 'user', 'password'] as $key) {
+            if (!array_key_exists($key, $config)) {
+                throw new RuntimeException("Database config is missing '{$key}'.");
+            }
         }
 
-        $config = require __DIR__ . '/config/db.php';
-
-        self::$pdo = new PDO(
-            $config['dsn'],
-            $config['user'],
-            $config['password'],
+        $pdo = new PDO(
+            (string) $config['dsn'],
+            (string) $config['user'],
+            (string) $config['password'],
             [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -29,11 +58,6 @@ final class Db
             ]
         );
 
-        return self::$pdo;
-    }
-
-    public static function pdo(): PDO
-    {
-        return self::getInstance();
+        return new self($pdo);
     }
 }
