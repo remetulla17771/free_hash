@@ -14,6 +14,7 @@ class App
     public Router $router;
     public Container $container;
     public Dispatcher $dispatcher;
+    public MiddlewareDispatcher $middleware;
 
     public string $title = 'My App';
     private array $configFile;
@@ -40,6 +41,10 @@ class App
 
         $this->dispatcher = new Dispatcher($this->container);
         $this->container->singleton(Dispatcher::class, $this->dispatcher);
+
+        $middleware = $this->configFile['middleware'] ?? [];
+        $this->middleware = new MiddlewareDispatcher($this->container, $middleware);
+        $this->container->singleton(MiddlewareDispatcher::class, $this->middleware);
     }
 
     private function registerComponents(array $components): void
@@ -55,8 +60,6 @@ class App
 
             $this->container->singleton($className, $instance);
             $this->container->singleton($id, $instance);
-
-            // Temporary compatibility layer for legacy application code.
             $this->{$id} = $instance;
         }
     }
@@ -96,9 +99,7 @@ class App
 
     public function config(?string $keyName = null): mixed
     {
-        return $keyName === null
-            ? $this->configFile
-            : ($this->configFile[$keyName] ?? null);
+        return $keyName === null ? $this->configFile : ($this->configFile[$keyName] ?? null);
     }
 
     public static function powered(): string
@@ -106,11 +107,19 @@ class App
         return '<a href="https://vk.com/deepn9x">deepn9x</a>';
     }
 
-    public function run(): mixed
+    public function run(): Response|string
     {
         try {
-            $route = $this->router->match();
-            return $this->dispatcher->dispatch($route);
+            return $this->middleware->handle($this->request, function (Request $request): Response {
+                $route = $this->router->match();
+                $result = $this->dispatcher->dispatch($route);
+
+                if ($result instanceof Response) {
+                    return $result;
+                }
+
+                return Response::html((string) $result);
+            });
         } catch (Throwable $e) {
             $code = (int) $e->getCode();
             if ($code < 400 || $code > 599) {
