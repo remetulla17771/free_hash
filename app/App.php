@@ -16,6 +16,7 @@ class App
     public Dispatcher $dispatcher;
     public MiddlewareDispatcher $middleware;
     public ModuleManager $modules;
+    public Db $db;
 
     public string $title = 'My App';
     private array $configFile;
@@ -35,16 +36,18 @@ class App
         $this->container->alias('request', Request::class);
         $this->container->alias('response', Response::class);
 
+        $this->db = Db::fromConfig($this->configFile['database'] ?? []);
+        $this->container->singleton(Db::class, $this->db);
+        ActiveRecord::setDb($this->db);
+
         $this->registerComponents($this->configFile['components'] ?? []);
 
         $this->modules = new ModuleManager($this->container, $this->configFile['modules'] ?? []);
         $this->container->singleton(ModuleManager::class, $this->modules);
 
         $this->container->singleton(ViewRenderer::class, new ViewRenderer(__DIR__ . '/../views'));
-
         $this->router = new Router($this->request, $this->modules);
         $this->container->singleton(Router::class, $this->router);
-
         $this->dispatcher = new Dispatcher($this->container);
         $this->container->singleton(Dispatcher::class, $this->dispatcher);
 
@@ -57,13 +60,8 @@ class App
     {
         foreach ($components as $id => $config) {
             $className = $config['class'] ?? null;
-            if (!$className || !class_exists($className)) {
-                throw new \RuntimeException("Component class '{$className}' not found.");
-            }
-
-            $options = $config['options'] ?? [];
-            $instance = $this->createComponent($className, $options);
-
+            if (!$className || !class_exists($className)) throw new \RuntimeException("Component class '{$className}' not found.");
+            $instance = $this->createComponent($className, $config['options'] ?? []);
             $this->container->singleton($className, $instance);
             $this->container->singleton($id, $instance);
             $this->{$id} = $instance;
@@ -73,41 +71,17 @@ class App
     private function createComponent(string $className, array $options): object
     {
         $instance = $options === [] ? $this->container->get($className) : $this->container->build($className);
-
         foreach ($options as $property => $value) {
-            if (!property_exists($instance, $property)) {
-                throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
-            }
+            if (!property_exists($instance, $property)) throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
             $instance->{$property} = $value;
         }
-
         return $instance;
     }
 
-    public function t(string $category, string $message, array $params = []): string
-    {
-        return I18n::t($category, $message, $params);
-    }
-
-    public function dd(mixed $value, bool $die = true): void
-    {
-        echo '<pre>';
-        print_r($value);
-        echo '</pre>';
-        if ($die) {
-            die;
-        }
-    }
-
-    public function config(?string $keyName = null): mixed
-    {
-        return $keyName === null ? $this->configFile : ($this->configFile[$keyName] ?? null);
-    }
-
-    public static function powered(): string
-    {
-        return '<a href="https://vk.com/deepn9x">deepn9x</a>';
-    }
+    public function t(string $category, string $message, array $params = []): string { return I18n::t($category, $message, $params); }
+    public function dd(mixed $value, bool $die = true): void { echo '<pre>'; print_r($value); echo '</pre>'; if ($die) die; }
+    public function config(?string $keyName = null): mixed { return $keyName === null ? $this->configFile : ($this->configFile[$keyName] ?? null); }
+    public static function powered(): string { return '<a href="https://vk.com/deepn9x">deepn9x</a>'; }
 
     public function run(): Response|string
     {
@@ -119,9 +93,7 @@ class App
             });
         } catch (Throwable $e) {
             $code = (int) $e->getCode();
-            if ($code < 400 || $code > 599) {
-                $code = 500;
-            }
+            if ($code < 400 || $code > 599) $code = 500;
             ErrorHandler::log($e, $code);
             return Response::error($code, $e->getMessage());
         }
