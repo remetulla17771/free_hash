@@ -27,6 +27,9 @@ final class Container
     /** @var array<string, string> */
     private array $aliases = [];
 
+    /** @var array<string, true> */
+    private array $building = [];
+
     public function set(string $id, mixed $value): void
     {
         $id = $this->resolveAlias($id);
@@ -48,8 +51,17 @@ final class Container
 
     public function alias(string $id, string $target): void
     {
+        if ($id === '' || $target === '') {
+            throw new RuntimeException('Container alias id and target cannot be empty.');
+        }
+
         if ($id === $target) {
             throw new RuntimeException("Container alias '{$id}' cannot point to itself.");
+        }
+
+        $resolvedTarget = $this->resolveAlias($target);
+        if ($resolvedTarget === $id) {
+            throw new RuntimeException("Circular container alias detected for '{$id}'.");
         }
 
         $this->aliases[$id] = $target;
@@ -89,44 +101,56 @@ final class Container
     /** @throws ReflectionException */
     public function build(string $class): object
     {
-        $reflection = new ReflectionClass($class);
-
-        if (!$reflection->isInstantiable()) {
-            throw new RuntimeException("Class '{$class}' is not instantiable.");
+        if (isset($this->building[$class])) {
+            $chain = array_keys($this->building);
+            $chain[] = $class;
+            throw new RuntimeException('Circular dependency detected: ' . implode(' -> ', $chain));
         }
 
-        $constructor = $reflection->getConstructor();
-        if ($constructor === null) {
-            return $reflection->newInstance();
-        }
+        $this->building[$class] = true;
 
-        $arguments = [];
-        foreach ($constructor->getParameters() as $parameter) {
-            $type = $parameter->getType();
+        try {
+            $reflection = new ReflectionClass($class);
 
-            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-                $arguments[] = $this->get($type->getName());
-                continue;
+            if (!$reflection->isInstantiable()) {
+                throw new RuntimeException("Class '{$class}' is not instantiable.");
             }
 
-            if ($type instanceof ReflectionUnionType) {
+            $constructor = $reflection->getConstructor();
+            if ($constructor === null) {
+                return $reflection->newInstance();
+            }
+
+            $arguments = [];
+            foreach ($constructor->getParameters() as $parameter) {
+                $type = $parameter->getType();
+
+                if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
+                    $arguments[] = $this->get($type->getName());
+                    continue;
+                }
+
+                if ($type instanceof ReflectionUnionType) {
+                    throw new RuntimeException(
+                        "Union-typed constructor parameter '{$parameter->getName()}' of '{$class}' "
+                        . 'cannot be resolved automatically.'
+                    );
+                }
+
+                if ($parameter->isDefaultValueAvailable()) {
+                    $arguments[] = $parameter->getDefaultValue();
+                    continue;
+                }
+
                 throw new RuntimeException(
-                    "Union-typed constructor parameter '{$parameter->getName()}' of '{$class}' "
-                    . 'cannot be resolved automatically.'
+                    "Unable to resolve constructor parameter '{$parameter->getName()}' of '{$class}'."
                 );
             }
 
-            if ($parameter->isDefaultValueAvailable()) {
-                $arguments[] = $parameter->getDefaultValue();
-                continue;
-            }
-
-            throw new RuntimeException(
-                "Unable to resolve constructor parameter '{$parameter->getName()}' of '{$class}'."
-            );
+            return $reflection->newInstanceArgs($arguments);
+        } finally {
+            unset($this->building[$class]);
         }
-
-        return $reflection->newInstanceArgs($arguments);
     }
 
     private function resolveAlias(string $id): string
