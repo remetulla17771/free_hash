@@ -20,15 +20,6 @@ final class Response
 
     public static function json(mixed $data, int $status = 200): self
     {
-        if ($data instanceof ActiveRecord) {
-            $data = $data->toArray();
-        } elseif (is_array($data)) {
-            $data = array_map(static fn ($item) =>
-                $item instanceof ActiveRecord ? $item->toArray() : $item,
-                $data
-            );
-        }
-
         return (new self())
             ->setStatusCode($status)
             ->setHeader('Content-Type', 'application/json; charset=utf-8')
