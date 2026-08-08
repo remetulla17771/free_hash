@@ -26,7 +26,13 @@ abstract class ActiveRecord implements JsonSerializable
     }
 
     protected function recordPersister(): RecordPersister { return $this->persister ??= new RecordPersister($this->database()); }
-    protected function queryFactory(): QueryFactory { return $this->queryFactory ??= new QueryFactory(new ModelFactory(new Container()), new QueryExecutor($this->database()->pdo())); }
+    protected function queryFactory(): QueryFactory
+    {
+        if ($this->queryFactory === null) {
+            $this->queryFactory = new QueryFactory(new ModelFactory());
+        }
+        return $this->queryFactory;
+    }
     public function jsonSerialize(): mixed { return $this->toArray(); }
     public function toArray(): array { return $this->attributes; }
     public function isNewRecord(): bool { return $this->isNewRecord; }
