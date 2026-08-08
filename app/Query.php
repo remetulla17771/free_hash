@@ -43,7 +43,6 @@ final class Query
     public function asMany(): self { $this->relMany = true; return $this; }
     public function asOne(): self { $this->relMany = false; return $this; }
 
-    /** JOIN table/ON expressions remain trusted SQL for backward compatibility. */
     public function join(string $type, string $table, string $on, array $params = []): self
     {
         $type = strtoupper(trim($type));
@@ -133,7 +132,6 @@ final class Query
         $factory = $this->modelFactory ?? $this->defaultModelFactory();
 
         return array_map(function (array $row) use ($factory): ActiveRecord {
-            /** @var ActiveRecord $instance */
             $instance = $factory->create($this->modelClass);
             $instance->load($row);
             return $instance;
@@ -147,7 +145,7 @@ final class Query
         return new ModelFactory($container);
     }
 
-    private function compile(string $select): array
+    public function compileSql(string $select = '*'): array
     {
         $model = $this->modelClass;
         $sql = 'SELECT ' . $select . ' FROM ' . $this->identifierPath($model::tableName()) . ($this->aliasValue ? ' ' . $this->aliasValue : '');
@@ -165,4 +163,6 @@ final class Query
         if ($this->limitValue !== null) $sql .= ' LIMIT ' . $this->limitValue . ' OFFSET ' . $this->offsetValue;
         return [$sql, $this->joinParams + $this->conditionParams];
     }
+
+    private function compile(string $select): array { return $this->compileSql($select); }
 }
