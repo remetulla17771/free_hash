@@ -95,7 +95,7 @@ final class Query
         [$sql, $params] = $this->compileSql('*');
         $rows = $this->executor()->fetchAll($sql, $params);
         $factory = $this->modelFactory ?? $this->defaultModelFactory();
-        return array_map(function (array $row) use ($factory): ActiveRecord { $instance = $factory->create($this->modelClass); $instance->load($row); return $instance; }, $rows);
+        return array_map(fn (array $row): ActiveRecord => $factory->hydrate($this->modelClass, $row), $rows);
     }
     private function executor(): QueryExecutor { return $this->executor ??= new QueryExecutor($this->db->pdo()); }
     private function defaultModelFactory(): ModelFactory { $container = new Container(); $container->singleton(Db::class, $this->db); return new ModelFactory($container); }
