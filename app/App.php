@@ -39,6 +39,7 @@ final class App
 
         $this->db = Db::fromConfig($this->configFile['database'] ?? []);
         $this->container->singleton(Db::class, $this->db);
+        $this->container->singleton(ModelFactory::class, new ModelFactory($this->container));
 
         $this->registerComponents($this->configFile['components'] ?? []);
         $this->registerServices($this->configFile['services'] ?? []);
