@@ -14,27 +14,24 @@ final class ModelFactory
     {
         if ($this->container !== null) {
             $model = $this->container->get($modelClass);
-            if (!$model instanceof ActiveRecord) {
-                throw new \RuntimeException("Model factory expected '{$modelClass}' to extend ActiveRecord.");
+            if (!$model instanceof ActiveRecord) throw new \RuntimeException("Model factory expected '{$modelClass}' to extend ActiveRecord.");
+            if ($db !== null && $model->getPrimaryKey() === null) {
+                // Models created by the container may not receive Db through their constructor.
+                $model = new $modelClass($db);
             }
             return $model;
         }
 
-        if ($db === null) {
-            throw new \RuntimeException("Database dependency is required to create '{$modelClass}'.");
-        }
-
+        if ($db === null) throw new \RuntimeException("Database dependency is required to create '{$modelClass}'.");
         $model = new $modelClass($db);
-        if (!$model instanceof ActiveRecord) {
-            throw new \RuntimeException("Model factory expected '{$modelClass}' to extend ActiveRecord.");
-        }
+        if (!$model instanceof ActiveRecord) throw new \RuntimeException("Model factory expected '{$modelClass}' to extend ActiveRecord.");
         return $model;
     }
 
     public function hydrate(string $modelClass, array $attributes, ?Db $db = null): ActiveRecord
     {
         $model = $this->create($modelClass, $db);
-        $model->load($attributes);
+        $model->load($attributes)->markExisting();
         return $model;
     }
 }
