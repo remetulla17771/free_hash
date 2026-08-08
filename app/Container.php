@@ -7,10 +7,13 @@ namespace app;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
+use ReflectionUnionType;
 use RuntimeException;
 
 /**
- * Minimal dependency injection container used by the application core.
+ * Small constructor-injection container.
+ *
+ * A class is not cached unless it was explicitly registered as a singleton.
  */
 class Container
 {
@@ -25,12 +28,7 @@ class Container
 
     public function set(string $id, mixed $value): void
     {
-        if (is_callable($value)) {
-            $this->factories[$id] = $value;
-            unset($this->instances[$id]);
-            return;
-        }
-
+        $id = $this->resolveAlias($id);
         $this->instances[$id] = $value;
         unset($this->factories[$id]);
     }
@@ -40,22 +38,32 @@ class Container
         $this->set($id, $value);
     }
 
+    public function factory(string $id, callable $factory): void
+    {
+        $id = $this->resolveAlias($id);
+        $this->factories[$id] = $factory;
+        unset($this->instances[$id]);
+    }
+
     public function alias(string $id, string $target): void
     {
+        if ($id === $target) {
+            throw new RuntimeException("Container alias '{$id}' cannot point to itself.");
+        }
+
         $this->aliases[$id] = $target;
     }
 
     public function has(string $id): bool
     {
         $id = $this->resolveAlias($id);
-        return isset($this->instances[$id])
+
+        return array_key_exists($id, $this->instances)
             || isset($this->factories[$id])
             || class_exists($id);
     }
 
-    /**
-     * @throws ReflectionException
-     */
+    /** @throws ReflectionException */
     public function get(string $id): mixed
     {
         $id = $this->resolveAlias($id);
@@ -66,8 +74,8 @@ class Container
 
         if (isset($this->factories[$id])) {
             $instance = ($this->factories[$id])($this);
+            $this->assertResolvedType($id, $instance);
             $this->instances[$id] = $instance;
-            unset($this->factories[$id]);
             return $instance;
         }
 
@@ -75,15 +83,11 @@ class Container
             throw new RuntimeException("Unable to resolve '{$id}'.");
         }
 
-        $instance = $this->build($id);
-        $this->instances[$id] = $instance;
-
-        return $instance;
+        // Automatic class resolution is transient. Use singleton() when caching is desired.
+        return $this->build($id);
     }
 
-    /**
-     * @throws ReflectionException
-     */
+    /** @throws ReflectionException */
     public function build(string $class): object
     {
         $reflection = new ReflectionClass($class);
@@ -106,14 +110,20 @@ class Container
                 continue;
             }
 
+            if ($type instanceof ReflectionUnionType) {
+                throw new RuntimeException(
+                    "Union-typed constructor parameter '{$parameter->getName()}' of '{$class}' "
+                    . 'cannot be resolved automatically.'
+                );
+            }
+
             if ($parameter->isDefaultValueAvailable()) {
                 $arguments[] = $parameter->getDefaultValue();
                 continue;
             }
 
             throw new RuntimeException(
-                "Unable to resolve constructor parameter '{$parameter->getName()}' "
-                . "of '{$class}'."
+                "Unable to resolve constructor parameter '{$parameter->getName()}' of '{$class}'."
             );
         }
 
@@ -123,14 +133,27 @@ class Container
     private function resolveAlias(string $id): string
     {
         $visited = [];
+
         while (isset($this->aliases[$id])) {
             if (isset($visited[$id])) {
                 throw new RuntimeException("Circular container alias detected for '{$id}'.");
             }
+
             $visited[$id] = true;
             $id = $this->aliases[$id];
         }
 
         return $id;
+    }
+
+    private function assertResolvedType(string $id, mixed $instance): void
+    {
+        if ($instance === null) {
+            return;
+        }
+
+        if (class_exists($id) && !$instance instanceof $id) {
+            throw new RuntimeException("Factory for '{$id}' returned an invalid object.");
+        }
     }
 }
