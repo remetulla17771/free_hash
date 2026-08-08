@@ -94,7 +94,7 @@ final class Query
     {
         [$sql, $params] = $this->compileSql('*');
         $rows = $this->executor->fetchAll($sql, $params);
-        return array_map(fn (array $row): ActiveRecord => $this->modelFactory->hydrate($this->modelClass, $row), $rows);
+        return array_map(fn (array $row): ActiveRecord => $this->modelFactory->hydrate($this->modelClass, $row, $this->db), $rows);
     }
     public function compileSql(string $select = '*'): array
     {
