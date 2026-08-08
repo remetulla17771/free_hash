@@ -8,13 +8,13 @@ use RuntimeException;
 
 final class ViewRenderer
 {
-    public function __construct(private string $basePath)
+    public function __construct(private string $basePath, private ?string $fallbackPath = null)
     {
     }
 
     public function render(string $view, array $params = [], ?string $layout = 'main'): string
     {
-        $content = $this->renderFile($this->resolveView($view), $params);
+        $content = $this->partial($view, $params);
 
         if ($layout === null) {
             return $content;
@@ -46,35 +46,36 @@ final class ViewRenderer
 
     private function resolveView(string $view): string
     {
-        $file = $this->basePath . '/' . trim($view, '/') . '.php';
-        $this->assertInsideBasePath($file);
-
-        if (!is_file($file)) {
-            throw new RuntimeException('View not found: ' . $view, 500);
-        }
-
-        return $file;
+        return $this->resolveFile($this->basePath . '/' . trim($view, '/') . '.php', $view, null);
     }
 
     private function resolveLayout(string $layout): string
     {
         $file = $this->basePath . '/layouts/' . trim($layout, '/') . '.php';
-        $this->assertInsideBasePath($file);
-
-        if (!is_file($file)) {
-            throw new RuntimeException('Layout not found: ' . $layout, 500);
+        if (is_file($file)) {
+            return $file;
         }
 
-        return $file;
+        if ($this->fallbackPath !== null) {
+            $fallback = $this->fallbackPath . '/layouts/' . trim($layout, '/') . '.php';
+            if (is_file($fallback)) {
+                return $fallback;
+            }
+        }
+
+        throw new RuntimeException('Layout not found: ' . $layout, 500);
     }
 
-    private function assertInsideBasePath(string $file): void
+    private function resolveFile(string $file, string $name, ?string $fallback): string
     {
-        $base = realpath($this->basePath);
-        $directory = realpath(dirname($file));
-
-        if ($base === false || $directory === false || ($directory !== $base && !str_starts_with($directory, $base . DIRECTORY_SEPARATOR))) {
-            throw new RuntimeException('Invalid view path.', 500);
+        if (is_file($file)) {
+            return $file;
         }
+
+        if ($fallback !== null && is_file($fallback)) {
+            return $fallback;
+        }
+
+        throw new RuntimeException('View not found: ' . $name, 500);
     }
 }
