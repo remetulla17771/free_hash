@@ -13,6 +13,7 @@ class App
     public Response $response;
     public Router $router;
     public Container $container;
+    public Dispatcher $dispatcher;
 
     public string $title = 'My App';
     private array $configFile;
@@ -34,8 +35,11 @@ class App
 
         $this->registerComponents($this->configFile['components'] ?? []);
 
-        $this->router = new Router($this->request, $this->container);
+        $this->router = new Router($this->request);
         $this->container->singleton(Router::class, $this->router);
+
+        $this->dispatcher = new Dispatcher($this->container);
+        $this->container->singleton(Dispatcher::class, $this->dispatcher);
     }
 
     private function registerComponents(array $components): void
@@ -52,8 +56,7 @@ class App
             $this->container->singleton($className, $instance);
             $this->container->singleton($id, $instance);
 
-            // Temporary compatibility layer. Components will move out of App
-            // properties once controllers/views stop using the old API.
+            // Temporary compatibility layer for legacy application code.
             $this->{$id} = $instance;
         }
     }
@@ -106,7 +109,8 @@ class App
     public function run(): mixed
     {
         try {
-            return $this->router->resolve();
+            $route = $this->router->match();
+            return $this->dispatcher->dispatch($route);
         } catch (Throwable $e) {
             $code = (int) $e->getCode();
             if ($code < 400 || $code > 599) {
