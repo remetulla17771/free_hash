@@ -11,31 +11,25 @@ abstract class ActiveRecord
 {
     protected array $attributes = [];
     protected array $_relCache = [];
-    private static ?Db $db = null;
 
     abstract public static function tableName(): string;
-
     abstract public function attributeLabels();
 
-    public static function setDb(Db $db): void
+    public function __construct(protected ?Db $db = null)
     {
-        self::$db = $db;
     }
 
-    protected static function db(): Db
+    protected function database(): Db
     {
-        if (!self::$db instanceof Db) {
-            throw new RuntimeException('ActiveRecord database connection is not configured.');
+        if ($this->db === null) {
+            throw new RuntimeException('Database dependency is not configured for model ' . static::class . '.');
         }
-        return self::$db;
+        return $this->db;
     }
 
     public function __get($name)
     {
-        if (array_key_exists($name, $this->_relCache)) {
-            return $this->_relCache[$name];
-        }
-
+        if (array_key_exists($name, $this->_relCache)) return $this->_relCache[$name];
         $method = 'get' . ucfirst($name);
         if (method_exists($this, $method)) {
             $query = $this->$method();
@@ -45,7 +39,6 @@ abstract class ActiveRecord
             }
             return $this->_relCache[$name] = $query;
         }
-
         return $this->attributes[$name] ?? null;
     }
 
@@ -69,29 +62,24 @@ abstract class ActiveRecord
     public function load(array $data, ?string $formName = null): bool
     {
         foreach ($data as $key => $value) {
-            if (!is_string($key) || $key === '') continue;
-            $this->attributes[$key] = $value;
+            if (is_string($key) && $key !== '') $this->attributes[$key] = $value;
         }
-
         $this->_relCache = [];
         return true;
     }
 
-    public function hasAttribute(string $name): bool
-    {
-        return array_key_exists($name, $this->attributes);
-    }
+    public function hasAttribute(string $name): bool { return array_key_exists($name, $this->attributes); }
 
     public function hasOne(string $class, array $link): Query
     {
         [$foreignKey, $primaryKey] = $this->relationLink($link);
-        return $class::find()->where([$foreignKey => $this->requiredAttribute($primaryKey)])->asOne();
+        return $class::find($this->database())->where([$foreignKey => $this->requiredAttribute($primaryKey)])->asOne();
     }
 
     public function hasMany(string $class, array $link): Query
     {
         [$foreignKey, $primaryKey] = $this->relationLink($link);
-        return $class::find()->where([$foreignKey => $this->requiredAttribute($primaryKey)])->asMany();
+        return $class::find($this->database())->where([$foreignKey => $this->requiredAttribute($primaryKey)])->asMany();
     }
 
     private function relationLink(array $link): array
@@ -99,9 +87,7 @@ abstract class ActiveRecord
         if (count($link) !== 1) throw new InvalidArgumentException('Relation link must contain exactly one foreign/primary key pair.');
         $foreignKey = array_key_first($link);
         $primaryKey = $link[$foreignKey];
-        if (!is_string($foreignKey) || !is_string($primaryKey) || $foreignKey === '' || $primaryKey === '') {
-            throw new InvalidArgumentException('Relation keys must be non-empty strings.');
-        }
+        if (!is_string($foreignKey) || !is_string($primaryKey) || $foreignKey === '' || $primaryKey === '') throw new InvalidArgumentException('Relation keys must be non-empty strings.');
         return [$foreignKey, $primaryKey];
     }
 
@@ -111,87 +97,67 @@ abstract class ActiveRecord
         return $this->attributes[$name];
     }
 
-    public static function find(): Query
-    {
-        return new Query(static::class, self::db()->pdo());
-    }
+    public static function find(Db $db): Query { return new Query(static::class, $db); }
 
-    public static function findOne(int $id): ?static
-    {
-        return static::find()->where(['id' => $id])->one();
-    }
+    public static function findOne(int $id, Db $db): ?static { return static::find($db)->where(['id' => $id])->one(); }
 
     public function delete(): bool
     {
         $id = $this->requiredAttribute('id');
-        $sql = 'DELETE FROM ' . $this->quoteIdentifier(static::tableName()) . ' WHERE ' . $this->quoteIdentifier('id') . ' = :id';
-        return self::db()->pdo()->prepare($sql)->execute(['id' => $id]);
+        return $this->database()->pdo()->prepare('DELETE FROM ' . self::quoteIdentifier(static::tableName()) . ' WHERE `id` = :id')->execute(['id' => $id]);
     }
 
-    public static function deleteAll(array $condition = []): bool
+    public static function deleteAll(array $condition, Db $db): bool
     {
-        $table = self::quoteIdentifier(static::tableName());
         [$where, $params] = self::buildCondition($condition);
-        $sql = 'DELETE FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
-        return self::db()->pdo()->prepare($sql)->execute($params);
+        $sql = 'DELETE FROM ' . self::quoteIdentifier(static::tableName()) . ($where !== '' ? ' WHERE ' . $where : '');
+        return $db->pdo()->prepare($sql)->execute($params);
     }
 
-    public function getPrimaryKey(string $name = 'id'): mixed
-    {
-        return $this->attributes[$name] ?? null;
-    }
+    public function getPrimaryKey(string $name = 'id'): mixed { return $this->attributes[$name] ?? null; }
 
     public function save(): bool
     {
         if ($this->attributes === []) throw new RuntimeException('Cannot save an empty model.');
-
-        $table = $this->quoteIdentifier(static::tableName());
+        $pdo = $this->database()->pdo();
+        $table = self::quoteIdentifier(static::tableName());
         $attributes = $this->attributes;
-        $pdo = self::db()->pdo();
 
         if (array_key_exists('id', $attributes) && $attributes['id'] !== null) {
             $id = $attributes['id'];
             unset($attributes['id']);
             if ($attributes === []) return true;
-
             $sets = [];
             $params = ['id' => $id];
             foreach ($attributes as $key => $value) {
                 $parameter = 'attr_' . count($params);
-                $sets[] = $this->quoteIdentifier($key) . ' = :' . $parameter;
+                $sets[] = self::quoteIdentifier($key) . ' = :' . $parameter;
                 $params[$parameter] = $value;
             }
-
-            $sql = 'UPDATE ' . $table . ' SET ' . implode(', ', $sets) . ' WHERE ' . $this->quoteIdentifier('id') . ' = :id';
-            return $pdo->prepare($sql)->execute($params);
+            return $pdo->prepare('UPDATE ' . $table . ' SET ' . implode(', ', $sets) . ' WHERE `id` = :id')->execute($params);
         }
 
-        $columns = [];
-        $placeholders = [];
-        $params = [];
+        $columns = $placeholders = $params = [];
         foreach ($attributes as $key => $value) {
             $parameter = 'attr_' . count($params);
-            $columns[] = $this->quoteIdentifier($key);
+            $columns[] = self::quoteIdentifier($key);
             $placeholders[] = ':' . $parameter;
             $params[$parameter] = $value;
         }
-
-        $sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
-        $result = $pdo->prepare($sql)->execute($params);
-        if ($result && $pdo->lastInsertId() !== '0' && !array_key_exists('id', $this->attributes)) {
-            $this->attributes['id'] = (int) $pdo->lastInsertId();
+        $result = $pdo->prepare('INSERT INTO ' . $table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')')->execute($params);
+        if ($result) {
+            $id = $pdo->lastInsertId();
+            if ($id !== '0' && !array_key_exists('id', $this->attributes)) $this->attributes['id'] = (int) $id;
         }
         return $result;
     }
 
     private static function buildCondition(array $condition): array
     {
-        $parts = [];
-        $params = [];
-        $index = 0;
+        $parts = $params = [];
         foreach ($condition as $column => $value) {
             if (!is_string($column) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) throw new InvalidArgumentException('Invalid SQL column name.');
-            $parameter = 'condition_' . $index++;
+            $parameter = 'condition_' . count($params);
             $parts[] = self::quoteIdentifier($column) . ' = :' . $parameter;
             $params[$parameter] = $value;
         }
