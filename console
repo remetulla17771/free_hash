@@ -1,26 +1,16 @@
+#!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
-require __DIR__ . './vendor/autoload.php';
 
-require __DIR__ . './app/ErrorHandler.php';
+require __DIR__ . '/vendor/autoload.php';
 
-use app\ErrorHandler;
+use app\Container;
+use app\console\ConsoleApplication;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-
-// автолоад как в web/index.php
-//spl_autoload_register(function ($class) {
-//    $prefix = 'app\\';
-//    $baseDir = __DIR__ . '/../app/';
-//    if (strncmp($prefix, $class, strlen($prefix)) !== 0) return;
-//
-//    $relativeClass = substr($class, strlen($prefix));
-//    $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
-//    if (file_exists($file)) require $file;
-//});
-
-
-$app = new app\console\ConsoleApplication();
-exit($app->run($argv));
+$container = new Container();
+$application = new ConsoleApplication($container);
+exit($application->run($argv));
