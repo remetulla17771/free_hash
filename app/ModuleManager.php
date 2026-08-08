@@ -37,11 +37,9 @@ final class ModuleManager
             throw new RuntimeException("Module '{$id}' must extend " . Module::class . '.');
         }
 
+        /** @var Module $module */
         $module = $this->container->build($class);
-
-        // Module receives framework context explicitly. Keep this assignment
-        // compatible with custom modules that rely on the base constructor.
-        $module = new $class($this->container, $id, $config);
+        $module->configure($id, $config);
 
         $this->modules[$id] = $module;
         $this->container->singleton($class, $module);
