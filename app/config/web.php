@@ -26,6 +26,12 @@ return [
         ],
     ],
 
+    'services' => [
+        'userRepository' => [
+            'class' => '\app\repositories\UserRepository',
+        ],
+    ],
+
     'database' => require __DIR__ . '/db.php',
 
     'middleware' => [],
