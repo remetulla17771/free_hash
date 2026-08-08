@@ -9,6 +9,8 @@ use Throwable;
 
 final class App
 {
+    private static ?self $instance = null;
+
     public Request $request;
     public Response $response;
     public Router $router;
@@ -23,6 +25,7 @@ final class App
 
     public function __construct(?Container $container = null, ?Request $request = null)
     {
+        self::$instance = $this;
         $this->container = $container ?? new Container();
         $this->configFile = require __DIR__ . '/config/web.php';
 
@@ -41,9 +44,7 @@ final class App
         $this->container->singleton(Db::class, $this->db);
         $this->container->singleton(ModelFactory::class, new ModelFactory($this->container));
         $this->container->singleton(QueryExecutor::class, new QueryExecutor($this->db->pdo()));
-        $this->container->singleton(QueryFactory::class, new QueryFactory(
-            $this->container->get(ModelFactory::class),
-        ));
+        $this->container->singleton(QueryFactory::class, new QueryFactory($this->container->get(ModelFactory::class)));
 
         $this->registerComponents($this->configFile['components'] ?? []);
         $this->registerServices($this->configFile['services'] ?? []);
@@ -60,6 +61,12 @@ final class App
         $middleware = $this->configFile['middleware'] ?? [];
         $this->middleware = new MiddlewareDispatcher($this->container, $middleware);
         $this->container->singleton(MiddlewareDispatcher::class, $this->middleware);
+    }
+
+    public static function instance(): self
+    {
+        if (self::$instance === null) throw new \RuntimeException('Application has not been initialized.');
+        return self::$instance;
     }
 
     private function registerComponents(array $components): void
