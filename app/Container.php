@@ -13,9 +13,10 @@ use RuntimeException;
 /**
  * Small constructor-injection container.
  *
- * A class is not cached unless it was explicitly registered as a singleton.
+ * Unregistered classes are transient. Explicit singletons are shared.
+ * Factories are transient and executed on every get().
  */
-class Container
+final class Container
 {
     /** @var array<string, mixed> */
     private array $instances = [];
@@ -75,7 +76,6 @@ class Container
         if (isset($this->factories[$id])) {
             $instance = ($this->factories[$id])($this);
             $this->assertResolvedType($id, $instance);
-            $this->instances[$id] = $instance;
             return $instance;
         }
 
@@ -83,7 +83,6 @@ class Container
             throw new RuntimeException("Unable to resolve '{$id}'.");
         }
 
-        // Automatic class resolution is transient. Use singleton() when caching is desired.
         return $this->build($id);
     }
 
