@@ -41,6 +41,10 @@ final class App
         $this->container->singleton(Db::class, $this->db);
         $this->container->singleton(ModelFactory::class, new ModelFactory($this->container));
         $this->container->singleton(QueryExecutor::class, new QueryExecutor($this->db->pdo()));
+        $this->container->singleton(QueryFactory::class, new QueryFactory(
+            $this->container->get(ModelFactory::class),
+            $this->container->get(QueryExecutor::class),
+        ));
 
         $this->registerComponents($this->configFile['components'] ?? []);
         $this->registerServices($this->configFile['services'] ?? []);
