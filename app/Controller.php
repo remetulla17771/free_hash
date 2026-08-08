@@ -11,6 +11,7 @@ class Controller
     public Request $request;
     public Response $response;
     public Container $container;
+    public ViewRenderer $view;
 
     // Temporary compatibility for the existing application layer.
     public mixed $user = null;
@@ -20,14 +21,12 @@ class Controller
     public mixed $arrayHelper = null;
     public mixed $stringer = null;
 
-    private array $config;
-
     public function __construct(Container $container)
     {
         $this->container = $container;
         $this->request = $container->get(Request::class);
         $this->response = $container->get(Response::class);
-        $this->config = $container->get(App::class)->config();
+        $this->view = $container->get(ViewRenderer::class);
 
         $this->user = $this->getComponent('user');
         $this->urlManager = $this->getComponent('urlManager');
@@ -40,25 +39,6 @@ class Controller
     private function getComponent(string $id): mixed
     {
         return $this->container->has($id) ? $this->container->get($id) : null;
-    }
-
-    protected function getModuleId(): ?string
-    {
-        $namespace = (new \ReflectionClass($this))->getNamespaceName();
-        if (!str_starts_with($namespace, 'modules\\')) {
-            return null;
-        }
-
-        $parts = explode('\\', $namespace);
-        return $parts[1] ?? null;
-    }
-
-    protected function getBaseViewPath(): string
-    {
-        $moduleId = $this->getModuleId();
-        return $moduleId
-            ? __DIR__ . "/../modules/{$moduleId}/views"
-            : __DIR__ . '/../views';
     }
 
     public function createUrl(array $route): string
@@ -81,52 +61,26 @@ class Controller
 
     public function render(string $view, array $params = []): string
     {
-        return $this->renderLayout($this->renderView($view, $params));
+        $controller = strtolower(
+            str_replace('Controller', '', (new \ReflectionClass($this))->getShortName())
+        );
+
+        return $this->view->render($controller . '/' . $view, $params, $this->layout);
     }
 
-    protected function renderView(string $view, array $params): string
+    public function renderPartial(string $view, array $params = []): string
     {
         $controller = strtolower(
             str_replace('Controller', '', (new \ReflectionClass($this))->getShortName())
         );
 
-        $viewFile = $this->getBaseViewPath() . "/{$controller}/{$view}.php";
-        if (!is_file($viewFile)) {
-            throw new \RuntimeException('Не найден вид: ' . $viewFile, 500);
-        }
-
-        extract($params, EXTR_SKIP);
-        ob_start();
-        require $viewFile;
-        return ob_get_clean();
-    }
-
-    public function renderPartial(string $view, array $params = []): string
-    {
-        return $this->renderView($view, $params);
-    }
-
-    protected function renderLayout(string $content): string
-    {
-        $base = $this->getBaseViewPath();
-        $layoutFile = $base . "/layouts/{$this->layout}.php";
-
-        if (!is_file($layoutFile)) {
-            $layoutFile = __DIR__ . "/../views/layouts/{$this->layout}.php";
-        }
-
-        if (!is_file($layoutFile)) {
-            throw new \RuntimeException("Layout not found: {$layoutFile}", 500);
-        }
-
-        ob_start();
-        require $layoutFile;
-        return ob_get_clean();
+        return $this->view->partial($controller . '/' . $view, $params);
     }
 
     public function config(?string $key = null): mixed
     {
-        return $key === null ? $this->config : ($this->config[$key] ?? null);
+        $config = $this->container->get(App::class)->config();
+        return $key === null ? $config : ($config[$key] ?? null);
     }
 
     public function t(string $category, string $message, array $params = []): string
