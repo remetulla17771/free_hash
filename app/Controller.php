@@ -12,7 +12,7 @@ class Controller
     public Response $response;
     public Container $container;
 
-    // Temporary component compatibility for existing controllers/views.
+    // Temporary compatibility for the existing application layer.
     public mixed $user = null;
     public mixed $urlManager = null;
     public mixed $language = null;
@@ -65,13 +65,18 @@ class Controller
     {
         $path = trim((string) ($route[0] ?? ''), '/');
         unset($route[0]);
-
         return '/' . $path . (!empty($route) ? '?' . http_build_query($route) : '');
     }
 
-    public function redirect(mixed $url, int $status = 302): Response
+    public function redirect(string|array $url, int $status = 302): Response
     {
-        return $this->response->redirect($url, $status, $this);
+        if (is_array($url)) {
+            $path = trim((string) ($url[0] ?? ''), '/');
+            unset($url[0]);
+            $url = '/' . $path . (!empty($url) ? '?' . http_build_query($url) : '');
+        }
+
+        return $this->response->redirect($url, $status);
     }
 
     public function render(string $view, array $params = []): string
