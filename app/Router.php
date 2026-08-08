@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace app;
 
+use ReflectionMethod;
 use RuntimeException;
 
-class Router
+final class Router
 {
     public function __construct(
         private Request $request,
@@ -32,38 +33,42 @@ class Router
             $parameterSegments = array_slice($segments, 2);
         }
 
-        if (!class_exists($controllerClass)) {
-            throw new RuntimeException('Controller not found: ' . $controllerClass, 404);
-        }
-
         $method = 'action' . $this->toStudly($actionName);
-        if (!method_exists($controllerClass, $method)) {
-            throw new RuntimeException('Action not found: ' . $method, 404);
-        }
+        $parameters = $this->mapPathParameters($controllerClass, $method, $parameterSegments);
 
-        $parameterNames = $this->parameterNames($controllerClass, $method);
-        $parameters = [];
-
-        foreach ($parameterSegments as $index => $value) {
-            if (isset($parameterNames[$index])) {
-                $parameters[$parameterNames[$index]] = $value;
-            }
-        }
-
+        // Query parameters are defaults. A path parameter always wins.
         foreach ($this->request->query() as $key => $value) {
-            $parameters[$key] = $value;
+            if (!array_key_exists($key, $parameters)) {
+                $parameters[$key] = $value;
+            }
         }
 
         return new Route($controllerClass, $method, $parameters);
     }
 
-    private function parameterNames(string $controllerClass, string $method): array
+    private function mapPathParameters(string $controllerClass, string $method, array $segments): array
     {
+        if (!class_exists($controllerClass)) {
+            throw new RuntimeException('Controller not found: ' . $controllerClass, 404);
+        }
+
+        if (!method_exists($controllerClass, $method)) {
+            throw new RuntimeException('Action not found: ' . $method, 404);
+        }
+
         $names = [];
-        foreach ((new \ReflectionMethod($controllerClass, $method))->getParameters() as $parameter) {
+        foreach ((new ReflectionMethod($controllerClass, $method))->getParameters() as $parameter) {
             $names[] = $parameter->getName();
         }
-        return $names;
+
+        $parameters = [];
+        foreach ($segments as $index => $value) {
+            if (isset($names[$index])) {
+                $parameters[$names[$index]] = $value;
+            }
+        }
+
+        return $parameters;
     }
 
     private function toStudly(string $name): string
