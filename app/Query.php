@@ -126,19 +126,25 @@ final class Query
 
     public function all(): array
     {
-        $model = $this->modelClass;
         [$sql, $params] = $this->compile('*');
         $statement = $this->db->pdo()->prepare($sql);
         $statement->execute($params);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
-        $factory = $this->modelFactory ?? new ModelFactory(new ContainerWithDb($this->db));
+        $factory = $this->modelFactory ?? $this->defaultModelFactory();
 
-        return array_map(function (array $row) use ($model, $factory): ActiveRecord {
+        return array_map(function (array $row) use ($factory): ActiveRecord {
             /** @var ActiveRecord $instance */
-            $instance = $factory->create($model);
+            $instance = $factory->create($this->modelClass);
             $instance->load($row);
             return $instance;
         }, $rows);
+    }
+
+    private function defaultModelFactory(): ModelFactory
+    {
+        $container = new Container();
+        $container->singleton(Db::class, $this->db);
+        return new ModelFactory($container);
     }
 
     private function compile(string $select): array
