@@ -26,6 +26,8 @@ return [
         ],
     ],
 
+    'database' => require __DIR__ . '/db.php',
+
     'middleware' => [],
 
     'modules' => [
