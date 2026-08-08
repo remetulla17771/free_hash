@@ -12,8 +12,9 @@ final class ControllerResolver
     {
     }
 
-    public function resolve(string $class): object
+    public function resolve(Route $route): object
     {
+        $class = $route->controller;
         if (!class_exists($class)) {
             throw new RuntimeException("Controller class '{$class}' not found.", 404);
         }
