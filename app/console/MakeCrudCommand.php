@@ -8,6 +8,8 @@ use RuntimeException;
 
 class MakeCrudCommand implements CommandInterface
 {
+    public function __construct(private Db $db) {}
+
     public function name(): string { return 'make:crud'; }
     public function description(): string { return 'Generate CRUD controller + views from DB table (PHP 7.4)'; }
 
@@ -47,7 +49,7 @@ class MakeCrudCommand implements CommandInterface
         }
 
         // schema
-        $pdo = Db::getInstance();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->query("DESCRIBE `$table`");
         $cols = $stmt ? $stmt->fetchAll(\PDO::FETCH_ASSOC) : [];
         if (!$cols) {
