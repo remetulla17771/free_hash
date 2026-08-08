@@ -11,10 +11,24 @@ abstract class ActiveRecord
 {
     protected array $attributes = [];
     protected array $_relCache = [];
+    private static ?Db $db = null;
 
     abstract public static function tableName(): string;
 
     abstract public function attributeLabels();
+
+    public static function setDb(Db $db): void
+    {
+        self::$db = $db;
+    }
+
+    protected static function db(): Db
+    {
+        if (!self::$db instanceof Db) {
+            throw new RuntimeException('ActiveRecord database connection is not configured.');
+        }
+        return self::$db;
+    }
 
     public function __get($name)
     {
@@ -55,9 +69,7 @@ abstract class ActiveRecord
     public function load(array $data, ?string $formName = null): bool
     {
         foreach ($data as $key => $value) {
-            if (!is_string($key) || $key === '') {
-                continue;
-            }
+            if (!is_string($key) || $key === '') continue;
             $this->attributes[$key] = $value;
         }
 
@@ -84,32 +96,24 @@ abstract class ActiveRecord
 
     private function relationLink(array $link): array
     {
-        if (count($link) !== 1) {
-            throw new InvalidArgumentException('Relation link must contain exactly one foreign/primary key pair.');
-        }
-
+        if (count($link) !== 1) throw new InvalidArgumentException('Relation link must contain exactly one foreign/primary key pair.');
         $foreignKey = array_key_first($link);
         $primaryKey = $link[$foreignKey];
-
         if (!is_string($foreignKey) || !is_string($primaryKey) || $foreignKey === '' || $primaryKey === '') {
             throw new InvalidArgumentException('Relation keys must be non-empty strings.');
         }
-
         return [$foreignKey, $primaryKey];
     }
 
     private function requiredAttribute(string $name): mixed
     {
-        if (!$this->hasAttribute($name)) {
-            throw new RuntimeException("Relation key '{$name}' is not loaded.");
-        }
-
+        if (!$this->hasAttribute($name)) throw new RuntimeException("Relation key '{$name}' is not loaded.");
         return $this->attributes[$name];
     }
 
     public static function find(): Query
     {
-        return new Query(static::class);
+        return new Query(static::class, self::db()->pdo());
     }
 
     public static function findOne(int $id): ?static
@@ -121,7 +125,7 @@ abstract class ActiveRecord
     {
         $id = $this->requiredAttribute('id');
         $sql = 'DELETE FROM ' . $this->quoteIdentifier(static::tableName()) . ' WHERE ' . $this->quoteIdentifier('id') . ' = :id';
-        return Db::pdo()->prepare($sql)->execute(['id' => $id]);
+        return self::db()->pdo()->prepare($sql)->execute(['id' => $id]);
     }
 
     public static function deleteAll(array $condition = []): bool
@@ -129,7 +133,7 @@ abstract class ActiveRecord
         $table = self::quoteIdentifier(static::tableName());
         [$where, $params] = self::buildCondition($condition);
         $sql = 'DELETE FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
-        return Db::pdo()->prepare($sql)->execute($params);
+        return self::db()->pdo()->prepare($sql)->execute($params);
     }
 
     public function getPrimaryKey(string $name = 'id'): mixed
@@ -139,21 +143,16 @@ abstract class ActiveRecord
 
     public function save(): bool
     {
-        if ($this->attributes === []) {
-            throw new RuntimeException('Cannot save an empty model.');
-        }
+        if ($this->attributes === []) throw new RuntimeException('Cannot save an empty model.');
 
         $table = $this->quoteIdentifier(static::tableName());
         $attributes = $this->attributes;
-        $pdo = Db::pdo();
+        $pdo = self::db()->pdo();
 
         if (array_key_exists('id', $attributes) && $attributes['id'] !== null) {
             $id = $attributes['id'];
             unset($attributes['id']);
-
-            if ($attributes === []) {
-                return true;
-            }
+            if ($attributes === []) return true;
 
             $sets = [];
             $params = ['id' => $id];
@@ -177,14 +176,11 @@ abstract class ActiveRecord
             $params[$parameter] = $value;
         }
 
-        $sql = 'INSERT INTO ' . $table
-            . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
-
+        $sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
         $result = $pdo->prepare($sql)->execute($params);
         if ($result && $pdo->lastInsertId() !== '0' && !array_key_exists('id', $this->attributes)) {
             $this->attributes['id'] = (int) $pdo->lastInsertId();
         }
-
         return $result;
     }
 
@@ -193,26 +189,18 @@ abstract class ActiveRecord
         $parts = [];
         $params = [];
         $index = 0;
-
         foreach ($condition as $column => $value) {
-            if (!is_string($column) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) {
-                throw new InvalidArgumentException('Invalid SQL column name.');
-            }
-
+            if (!is_string($column) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) throw new InvalidArgumentException('Invalid SQL column name.');
             $parameter = 'condition_' . $index++;
             $parts[] = self::quoteIdentifier($column) . ' = :' . $parameter;
             $params[$parameter] = $value;
         }
-
         return [implode(' AND ', $parts), $params];
     }
 
     private static function quoteIdentifier(string $identifier): string
     {
-        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?$/', $identifier)) {
-            throw new InvalidArgumentException('Invalid SQL identifier: ' . $identifier);
-        }
-
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?$/', $identifier)) throw new InvalidArgumentException('Invalid SQL identifier: ' . $identifier);
         return implode('.', array_map(static fn (string $part) => '`' . $part . '`', explode('.', $identifier)));
     }
 }
