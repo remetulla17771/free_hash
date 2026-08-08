@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace app;
 
-use PDO;
 use RuntimeException;
 
 final class Query
@@ -21,9 +20,12 @@ final class Query
 
     public ?bool $relMany = null;
 
-    public function __construct(private string $modelClass, private Db $db, private ?ModelFactory $modelFactory = null)
-    {
-    }
+    public function __construct(
+        private string $modelClass,
+        private Db $db,
+        private ?ModelFactory $modelFactory = null,
+        private ?QueryExecutor $executor = null,
+    ) {}
 
     public function alias(string $alias): self { $this->aliasValue = $this->identifier($alias); return $this; }
     public function limit(int $limit): self { $this->limitValue = max(1, $limit); return $this; }
@@ -69,7 +71,6 @@ final class Query
     {
         if ($condition === null || $condition === [] || $condition === '') return '';
         if (is_string($condition)) throw new RuntimeException('Raw SQL WHERE conditions are not supported.');
-
         if ($this->isAssoc($condition)) {
             $parts = [];
             foreach ($condition as $column => $value) {
@@ -78,26 +79,19 @@ final class Query
             }
             return implode(' AND ', $parts);
         }
-
         $operator = strtolower((string) ($condition[0] ?? ''));
         if (in_array($operator, ['and', 'or'], true)) {
             $parts = [];
-            for ($i = 1; $i < count($condition); $i++) {
-                $part = $this->buildCondition($condition[$i]);
-                if ($part !== '') $parts[] = '(' . $part . ')';
-            }
+            for ($i = 1; $i < count($condition); $i++) { $part = $this->buildCondition($condition[$i]); if ($part !== '') $parts[] = '(' . $part . ')'; }
             return implode(' ' . strtoupper($operator) . ' ', $parts);
         }
-
         $column = $this->identifierPath((string) ($condition[1] ?? ''));
         $value = $condition[2] ?? null;
         return match ($operator) {
             'like' => $column . ' LIKE ' . $this->parameter('%' . $value . '%'),
             'between' => $column . ' BETWEEN ' . $this->parameter($condition[2] ?? null) . ' AND ' . $this->parameter($condition[3] ?? null),
             'in' => $this->buildInCondition($column, $value),
-            '=', '!=', '<>', '>', '>=', '<', '<=' => $value === null
-                ? ($operator === '=' ? "{$column} IS NULL" : "{$column} IS NOT NULL")
-                : $column . ' ' . $operator . ' ' . $this->parameter($value),
+            '=', '!=', '<>', '>', '>=', '<', '<=' => $value === null ? ($operator === '=' ? "{$column} IS NULL" : "{$column} IS NOT NULL") : $column . ' ' . $operator . ' ' . $this->parameter($value),
             default => throw new RuntimeException("Bad operator: {$operator}"),
         };
     }
@@ -117,25 +111,26 @@ final class Query
 
     public function count(): int
     {
-        [$sql, $params] = $this->compile('COUNT(*) AS cnt');
-        $statement = $this->db->pdo()->prepare($sql);
-        $statement->execute($params);
-        return (int) ($statement->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
+        [$sql, $params] = $this->compileSql('COUNT(*) AS cnt');
+        $row = $this->executor()->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     public function all(): array
     {
-        [$sql, $params] = $this->compile('*');
-        $statement = $this->db->pdo()->prepare($sql);
-        $statement->execute($params);
-        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+        [$sql, $params] = $this->compileSql('*');
+        $rows = $this->executor()->fetchAll($sql, $params);
         $factory = $this->modelFactory ?? $this->defaultModelFactory();
-
         return array_map(function (array $row) use ($factory): ActiveRecord {
             $instance = $factory->create($this->modelClass);
             $instance->load($row);
             return $instance;
         }, $rows);
+    }
+
+    private function executor(): QueryExecutor
+    {
+        return $this->executor ??= new QueryExecutor($this->db->pdo());
     }
 
     private function defaultModelFactory(): ModelFactory
@@ -163,6 +158,4 @@ final class Query
         if ($this->limitValue !== null) $sql .= ' LIMIT ' . $this->limitValue . ' OFFSET ' . $this->offsetValue;
         return [$sql, $this->joinParams + $this->conditionParams];
     }
-
-    private function compile(string $select): array { return $this->compileSql($select); }
 }
