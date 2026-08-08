@@ -30,7 +30,6 @@ final class Query
     public function alias(string $alias): self { $this->aliasValue = $this->identifier($alias); return $this; }
     public function limit(int $limit): self { $this->limitValue = max(1, $limit); return $this; }
     public function offset(int $offset): self { $this->offsetValue = max(0, $offset); return $this; }
-
     public function orderBy(array $columns): self
     {
         foreach ($columns as $column => $direction) {
@@ -41,10 +40,8 @@ final class Query
         $this->orderBy = $columns;
         return $this;
     }
-
     public function asMany(): self { $this->relMany = true; return $this; }
     public function asOne(): self { $this->relMany = false; return $this; }
-
     public function join(string $type, string $table, string $on, array $params = []): self
     {
         $type = strtoupper(trim($type));
@@ -53,17 +50,8 @@ final class Query
         foreach ($params as $key => $value) $this->joinParams[':' . ltrim((string) $key, ':')] = $value;
         return $this;
     }
-
     public function leftJoin(string $table, string $on, array $params = []): self { return $this->join('LEFT JOIN', $table, $on, $params); }
-
-    public function where(array|string|null $condition): self
-    {
-        $this->whereParts = [];
-        $this->conditionParams = [];
-        $this->parameterCounter = 0;
-        return $this->andWhere($condition);
-    }
-
+    public function where(array|string|null $condition): self { $this->whereParts = []; $this->conditionParams = []; $this->parameterCounter = 0; return $this->andWhere($condition); }
     public function andWhere(array|string|null $condition): self { $sql = $this->buildCondition($condition); if ($sql !== '') $this->whereParts[] = ['AND', $sql]; return $this; }
     public function orWhere(array|string|null $condition): self { $sql = $this->buildCondition($condition); if ($sql !== '') $this->whereParts[] = ['OR', $sql]; return $this; }
 
@@ -95,66 +83,29 @@ final class Query
             default => throw new RuntimeException("Bad operator: {$operator}"),
         };
     }
-
-    private function buildInCondition(string $column, mixed $values): string
-    {
-        if (!is_array($values) || $values === []) return '0=1';
-        return $column . ' IN (' . implode(', ', array_map(fn ($value) => $this->parameter($value), $values)) . ')';
-    }
-
+    private function buildInCondition(string $column, mixed $values): string { if (!is_array($values) || $values === []) return '0=1'; return $column . ' IN (' . implode(', ', array_map(fn ($value) => $this->parameter($value), $values)) . ')'; }
     private function parameter(mixed $value): string { $name = ':p' . $this->parameterCounter++; $this->conditionParams[$name] = $value; return $name; }
     private function isAssoc(array $value): bool { return array_keys($value) !== range(0, count($value) - 1); }
     private function identifier(string $value): string { if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value)) throw new RuntimeException("Invalid SQL identifier: {$value}"); return '`' . $value . '`'; }
     private function identifierPath(string $value): string { $parts = explode('.', $value); if ($parts === [] || count($parts) > 2) throw new RuntimeException("Invalid SQL identifier path: {$value}"); return implode('.', array_map(fn ($part) => $this->identifier($part), $parts)); }
-
     public function one(): ?ActiveRecord { $this->limit(1); return $this->all()[0] ?? null; }
-
-    public function count(): int
-    {
-        [$sql, $params] = $this->compileSql('COUNT(*) AS cnt');
-        $row = $this->executor()->fetchOne($sql, $params);
-        return (int) ($row['cnt'] ?? 0);
-    }
-
+    public function count(): int { [$sql, $params] = $this->compileSql('COUNT(*) AS cnt'); $row = $this->executor()->fetchOne($sql, $params); return (int) ($row['cnt'] ?? 0); }
     public function all(): array
     {
         [$sql, $params] = $this->compileSql('*');
         $rows = $this->executor()->fetchAll($sql, $params);
         $factory = $this->modelFactory ?? $this->defaultModelFactory();
-        return array_map(function (array $row) use ($factory): ActiveRecord {
-            $instance = $factory->create($this->modelClass);
-            $instance->load($row);
-            return $instance;
-        }, $rows);
+        return array_map(function (array $row) use ($factory): ActiveRecord { $instance = $factory->create($this->modelClass); $instance->load($row); return $instance; }, $rows);
     }
-
-    private function executor(): QueryExecutor
-    {
-        return $this->executor ??= new QueryExecutor($this->db->pdo());
-    }
-
-    private function defaultModelFactory(): ModelFactory
-    {
-        $container = new Container();
-        $container->singleton(Db::class, $this->db);
-        return new ModelFactory($container);
-    }
-
+    private function executor(): QueryExecutor { return $this->executor ??= new QueryExecutor($this->db->pdo()); }
+    private function defaultModelFactory(): ModelFactory { $container = new Container(); $container->singleton(Db::class, $this->db); return new ModelFactory($container); }
     public function compileSql(string $select = '*'): array
     {
         $model = $this->modelClass;
         $sql = 'SELECT ' . $select . ' FROM ' . $this->identifierPath($model::tableName()) . ($this->aliasValue ? ' ' . $this->aliasValue : '');
         foreach ($this->joins as [$type, $table, $on]) $sql .= " {$type} {$table} ON {$on}";
-        if ($this->whereParts !== []) {
-            $chunks = [];
-            foreach ($this->whereParts as $index => [$boolean, $part]) $chunks[] = $index === 0 ? $part : $boolean . ' ' . $part;
-            $sql .= ' WHERE ' . implode(' ', $chunks);
-        }
-        if ($this->orderBy !== []) {
-            $parts = [];
-            foreach ($this->orderBy as $column => $direction) $parts[] = $this->identifierPath((string) $column) . ' ' . strtoupper((string) $direction);
-            $sql .= ' ORDER BY ' . implode(', ', $parts);
-        }
+        if ($this->whereParts !== []) { $chunks = []; foreach ($this->whereParts as $index => [$boolean, $part]) $chunks[] = $index === 0 ? $part : $boolean . ' ' . $part; $sql .= ' WHERE ' . implode(' ', $chunks); }
+        if ($this->orderBy !== []) { $parts = []; foreach ($this->orderBy as $column => $direction) $parts[] = $this->identifierPath((string) $column) . ' ' . strtoupper((string) $direction); $sql .= ' ORDER BY ' . implode(', ', $parts); }
         if ($this->limitValue !== null) $sql .= ' LIMIT ' . $this->limitValue . ' OFFSET ' . $this->offsetValue;
         return [$sql, $this->joinParams + $this->conditionParams];
     }
