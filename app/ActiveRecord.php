@@ -21,18 +21,19 @@ abstract class ActiveRecord implements JsonSerializable
 
     protected function database(): Db
     {
-        if ($this->db === null) throw new RuntimeException('Database dependency is not configured for model ' . static::class . '.');
+        if ($this->db === null) {
+            $this->db = App::instance()->container->get(Db::class);
+        }
         return $this->db;
     }
 
     protected function recordPersister(): RecordPersister { return $this->persister ??= new RecordPersister($this->database()); }
     protected function queryFactory(): QueryFactory
     {
-        if ($this->queryFactory === null) {
-            $this->queryFactory = App::instance()->container->get(QueryFactory::class);
-        }
+        if ($this->queryFactory === null) $this->queryFactory = App::instance()->container->get(QueryFactory::class);
         return $this->queryFactory;
     }
+
     public function jsonSerialize(): mixed { return $this->toArray(); }
     public function toArray(): array { return $this->attributes; }
     public function isNewRecord(): bool { return $this->isNewRecord; }
@@ -61,7 +62,6 @@ abstract class ActiveRecord implements JsonSerializable
     {
         foreach ($data as $key => $value) if (is_string($key) && $key !== '') $this->attributes[$key] = $value;
         $this->_relCache = [];
-        $this->isNewRecord = false;
         return true;
     }
 
@@ -78,12 +78,14 @@ abstract class ActiveRecord implements JsonSerializable
     }
 
     private function requiredAttribute(string $name): mixed { if (!$this->hasAttribute($name)) throw new RuntimeException("Relation key '{$name}' is not loaded."); return $this->attributes[$name]; }
+
     public static function find(?Db $db = null): Query
     {
         $db ??= App::instance()->container->get(Db::class);
         $model = new static($db);
         return $model->queryFactory()->create(static::class, $db);
     }
+
     public static function findOne(int $id, ?Db $db = null): ?static { return static::find($db)->where(['id' => $id])->one(); }
 
     public function delete(): bool
@@ -105,7 +107,10 @@ abstract class ActiveRecord implements JsonSerializable
     public function save(): bool
     {
         if ($this->attributes === []) throw new RuntimeException('Cannot save an empty model.');
-        $attributes = $this->attributes; $id = $attributes['id'] ?? null; unset($attributes['id']);
+        $attributes = $this->attributes;
+        $id = $attributes['id'] ?? null;
+        unset($attributes['id']);
+
         if (!$this->isNewRecord) return $this->recordPersister()->update(static::tableName(), $id, $attributes);
         $newId = $this->recordPersister()->insert(static::tableName(), $attributes);
         if ($newId !== null && !array_key_exists('id', $this->attributes)) $this->attributes['id'] = (int) $newId;
@@ -118,7 +123,9 @@ abstract class ActiveRecord implements JsonSerializable
         $parts = $params = [];
         foreach ($condition as $column => $value) {
             if (!is_string($column) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) throw new InvalidArgumentException('Invalid SQL column name.');
-            $parameter = 'condition_' . count($params); $parts[] = self::quoteIdentifier($column) . ' = :' . $parameter; $params[$parameter] = $value;
+            $parameter = 'condition_' . count($params);
+            $parts[] = self::quoteIdentifier($column) . ' = :' . $parameter;
+            $params[$parameter] = $value;
         }
         return [implode(' AND ', $parts), $params];
     }
