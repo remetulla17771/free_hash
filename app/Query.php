@@ -21,7 +21,7 @@ final class Query
 
     public ?bool $relMany = null;
 
-    public function __construct(private string $modelClass, private ?PDO $pdo = null) {}
+    public function __construct(private string $modelClass, private Db $db) {}
 
     public function alias(string $alias): self { $this->aliasValue = $this->identifier($alias); return $this; }
     public function limit(int $limit): self { $this->limitValue = max(1, $limit); return $this; }
@@ -61,19 +61,8 @@ final class Query
         return $this->andWhere($condition);
     }
 
-    public function andWhere(array|string|null $condition): self
-    {
-        $sql = $this->buildCondition($condition);
-        if ($sql !== '') $this->whereParts[] = ['AND', $sql];
-        return $this;
-    }
-
-    public function orWhere(array|string|null $condition): self
-    {
-        $sql = $this->buildCondition($condition);
-        if ($sql !== '') $this->whereParts[] = ['OR', $sql];
-        return $this;
-    }
+    public function andWhere(array|string|null $condition): self { $sql = $this->buildCondition($condition); if ($sql !== '') $this->whereParts[] = ['AND', $sql]; return $this; }
+    public function orWhere(array|string|null $condition): self { $sql = $this->buildCondition($condition); if ($sql !== '') $this->whereParts[] = ['OR', $sql]; return $this; }
 
     private function buildCondition(array|string|null $condition): string
     {
@@ -101,7 +90,6 @@ final class Query
 
         $column = $this->identifierPath((string) ($condition[1] ?? ''));
         $value = $condition[2] ?? null;
-
         return match ($operator) {
             'like' => $column . ' LIKE ' . $this->parameter('%' . $value . '%'),
             'between' => $column . ' BETWEEN ' . $this->parameter($condition[2] ?? null) . ' AND ' . $this->parameter($condition[3] ?? null),
@@ -119,34 +107,17 @@ final class Query
         return $column . ' IN (' . implode(', ', array_map(fn ($value) => $this->parameter($value), $values)) . ')';
     }
 
-    private function parameter(mixed $value): string
-    {
-        $name = ':p' . $this->parameterCounter++;
-        $this->conditionParams[$name] = $value;
-        return $name;
-    }
-
+    private function parameter(mixed $value): string { $name = ':p' . $this->parameterCounter++; $this->conditionParams[$name] = $value; return $name; }
     private function isAssoc(array $value): bool { return array_keys($value) !== range(0, count($value) - 1); }
-
-    private function identifier(string $value): string
-    {
-        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value)) throw new RuntimeException("Invalid SQL identifier: {$value}");
-        return '`' . $value . '`';
-    }
-
-    private function identifierPath(string $value): string
-    {
-        $parts = explode('.', $value);
-        if ($parts === [] || count($parts) > 2) throw new RuntimeException("Invalid SQL identifier path: {$value}");
-        return implode('.', array_map(fn ($part) => $this->identifier($part), $parts));
-    }
+    private function identifier(string $value): string { if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value)) throw new RuntimeException("Invalid SQL identifier: {$value}"); return '`' . $value . '`'; }
+    private function identifierPath(string $value): string { $parts = explode('.', $value); if ($parts === [] || count($parts) > 2) throw new RuntimeException("Invalid SQL identifier path: {$value}"); return implode('.', array_map(fn ($part) => $this->identifier($part), $parts)); }
 
     public function one(): ?ActiveRecord { $this->limit(1); return $this->all()[0] ?? null; }
 
     public function count(): int
     {
         [$sql, $params] = $this->compile('COUNT(*) AS cnt');
-        $statement = $this->connection()->prepare($sql);
+        $statement = $this->db->pdo()->prepare($sql);
         $statement->execute($params);
         return (int) ($statement->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
     }
@@ -155,39 +126,28 @@ final class Query
     {
         $model = $this->modelClass;
         [$sql, $params] = $this->compile('*');
-        $statement = $this->connection()->prepare($sql);
+        $statement = $this->db->pdo()->prepare($sql);
         $statement->execute($params);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
-
-        return array_map(function (array $row) use ($model): ActiveRecord {
-            $instance = new $model();
-            $instance->load($row);
-            return $instance;
-        }, $rows);
+        return array_map(function (array $row) use ($model): ActiveRecord { $instance = new $model(); $instance->load($row); return $instance; }, $rows);
     }
 
     private function compile(string $select): array
     {
         $model = $this->modelClass;
         $sql = 'SELECT ' . $select . ' FROM ' . $this->identifierPath($model::tableName()) . ($this->aliasValue ? ' ' . $this->aliasValue : '');
-
         foreach ($this->joins as [$type, $table, $on]) $sql .= " {$type} {$table} ON {$on}";
-
         if ($this->whereParts !== []) {
             $chunks = [];
             foreach ($this->whereParts as $index => [$boolean, $part]) $chunks[] = $index === 0 ? $part : $boolean . ' ' . $part;
             $sql .= ' WHERE ' . implode(' ', $chunks);
         }
-
         if ($this->orderBy !== []) {
             $parts = [];
             foreach ($this->orderBy as $column => $direction) $parts[] = $this->identifierPath((string) $column) . ' ' . strtoupper((string) $direction);
             $sql .= ' ORDER BY ' . implode(', ', $parts);
         }
-
         if ($this->limitValue !== null) $sql .= ' LIMIT ' . $this->limitValue . ' OFFSET ' . $this->offsetValue;
         return [$sql, $this->joinParams + $this->conditionParams];
     }
-
-    private function connection(): PDO { return $this->pdo ?? Db::getInstance(); }
 }
