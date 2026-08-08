@@ -30,7 +30,8 @@ final class MigrateCommand implements CommandInterface
         $dir = (string) $in->opt('dir', 'migrations');
         $table = (string) $in->opt('table', 'migration');
         if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) {
-            throw new RuntimeException("Bad migration table name: {$table}");
+            $out->err("Bad migration table name: {$table}");
+            return 1;
         }
 
         $dirPath = $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dir);
@@ -39,7 +40,7 @@ final class MigrateCommand implements CommandInterface
 
         return $action === 'down'
             ? $this->down($pdo, $table, $dirPath, $count, $out)
-            : $this->up($pdo, $table, $dirPath, $out);
+            : $this->up($pdo, $table, $dirPath, $count, $out);
     }
 
     private function ensureMigrationTable(\PDO $pdo, string $table): void
@@ -47,7 +48,7 @@ final class MigrateCommand implements CommandInterface
         $pdo->exec("CREATE TABLE IF NOT EXISTS `{$table}` (version VARCHAR(180) NOT NULL PRIMARY KEY, apply_time INT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8");
     }
 
-    private function up(\PDO $pdo, string $table, string $dirPath, Output $out): int
+    private function up(\PDO $pdo, string $table, string $dirPath, int $count, Output $out): int
     {
         $files = $this->scanMigrations($dirPath);
         $applied = array_fill_keys($this->getApplied($pdo, $table), true);
@@ -57,10 +58,11 @@ final class MigrateCommand implements CommandInterface
             return 0;
         }
 
+        $pending = array_slice($pending, 0, $count, true);
         foreach ($pending as $version => $file) {
             $out->line("Applying: {$version}");
             require_once $file;
-            if (!class_exists($version)) {
+            if (!class_exists($version, false)) {
                 $out->err("Class not found: {$version}");
                 return 1;
             }
@@ -100,7 +102,7 @@ final class MigrateCommand implements CommandInterface
                 return 1;
             }
             require_once $files[$version];
-            if (!class_exists($version)) {
+            if (!class_exists($version, false)) {
                 $out->err("Class not found: {$version}");
                 return 1;
             }
