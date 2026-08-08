@@ -10,8 +10,19 @@ final class ModelFactory
     {
     }
 
-    public function create(string $modelClass): object
+    public function create(string $modelClass): ActiveRecord
     {
-        return $this->container->get($modelClass);
+        $model = $this->container->get($modelClass);
+        if (!$model instanceof ActiveRecord) {
+            throw new \RuntimeException("Model factory expected '{$modelClass}' to extend ActiveRecord.");
+        }
+        return $model;
+    }
+
+    public function hydrate(string $modelClass, array $attributes): ActiveRecord
+    {
+        $model = $this->create($modelClass);
+        $model->load($attributes);
+        return $model;
     }
 }
