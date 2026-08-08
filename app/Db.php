@@ -1,49 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
 use PDO;
 
-class Db
+final class Db
 {
     private static ?PDO $pdo = null;
 
     public static function getInstance(): PDO
     {
-
-        try {
-            $config = require __DIR__ . '/config/db.php';
-
-            self::$pdo = new PDO(
-                $config['dsn'],
-                $config['user'],
-                $config['password'],
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                ]
-            );
-
+        if (self::$pdo instanceof PDO) {
             return self::$pdo;
-
-        } catch (\Throwable $e){
-            $controller = new \app\controllers\ErrorController();
-            $code = $e->getCode();
-            if ($code < 400 || $code >= 600) {
-                $code = 500;
-            }
-
-            // ✅ РЕГИСТРИРУЕМ ОБРАБОТЧИК ОШИБОК
-            \app\ErrorHandler::log($e, $code);
-
-            echo $controller->actionIndex(
-                $code,
-                $e->getMessage(),
-                $e
-            );
-            die;
         }
 
+        $config = require __DIR__ . '/config/db.php';
 
+        self::$pdo = new PDO(
+            $config['dsn'],
+            $config['user'],
+            $config['password'],
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]
+        );
+
+        return self::$pdo;
+    }
+
+    public static function pdo(): PDO
+    {
+        return self::getInstance();
     }
 }
