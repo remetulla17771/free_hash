@@ -7,7 +7,7 @@ namespace app;
 use app\helpers\I18n;
 use Throwable;
 
-class App
+final class App
 {
     public Request $request;
     public Response $response;
@@ -40,6 +40,7 @@ class App
         $this->container->singleton(Db::class, $this->db);
 
         $this->registerComponents($this->configFile['components'] ?? []);
+        $this->registerServices($this->configFile['services'] ?? []);
 
         $this->modules = new ModuleManager($this->container, $this->configFile['modules'] ?? []);
         $this->container->singleton(ModuleManager::class, $this->modules);
@@ -59,25 +60,44 @@ class App
     {
         foreach ($components as $id => $config) {
             $className = $config['class'] ?? null;
-            if (!$className || !class_exists($className)) {
+            if (!is_string($className) || !class_exists($className)) {
                 throw new \RuntimeException("Component class '{$className}' not found.");
             }
-            $instance = $this->createComponent($className, $config['options'] ?? []);
+
+            $instance = $this->createConfiguredService($className, $config['options'] ?? []);
             $this->container->singleton($className, $instance);
-            $this->container->singleton($id, $instance);
-            $this->{$id} = $instance;
+            $this->container->singleton((string) $id, $instance);
+
+            if (property_exists($this, (string) $id)) {
+                $this->{$id} = $instance;
+            }
         }
     }
 
-    private function createComponent(string $className, array $options): object
+    private function registerServices(array $services): void
     {
-        $instance = $options === [] ? $this->container->get($className) : $this->container->build($className);
+        foreach ($services as $id => $config) {
+            $className = $config['class'] ?? null;
+            if (!is_string($className) || !class_exists($className)) {
+                throw new \RuntimeException("Service class '{$className}' not found.");
+            }
+
+            $this->container->singleton($className, $this->createConfiguredService($className, $config['options'] ?? []));
+            $this->container->alias((string) $id, $className);
+        }
+    }
+
+    private function createConfiguredService(string $className, array $options): object
+    {
+        $instance = $this->container->build($className);
+
         foreach ($options as $property => $value) {
             if (!property_exists($instance, $property)) {
                 throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
             }
             $instance->{$property} = $value;
         }
+
         return $instance;
     }
 
