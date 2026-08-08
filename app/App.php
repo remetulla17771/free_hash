@@ -1,116 +1,120 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
 use app\helpers\I18n;
-use app\ErrorHandler;
-
+use Throwable;
 
 class App
 {
-    /**
-     * @var mixed|null
-     */
-
     public Request $request;
     public Response $response;
     public Router $router;
+    public Container $container;
 
-    public $title = "My App";
-    private $configFile;
+    public string $title = 'My App';
+    private array $configFile;
 
-    public function __construct()
+    public function __construct(?Container $container = null)
     {
+        $this->container = $container ?? new Container();
+        $this->configFile = require __DIR__ . '/config/web.php';
+
         $this->request = new Request();
-        $this->router = new Router($this->request);
+        $this->response = new Response();
 
-        $this->configFile = require "config/web.php";
+        $this->container->singleton(Container::class, $this->container);
+        $this->container->singleton(Request::class, $this->request);
+        $this->container->singleton(Response::class, $this->response);
+        $this->container->singleton(self::class, $this);
+        $this->container->alias('request', Request::class);
+        $this->container->alias('response', Response::class);
 
-        foreach ($this->configFile['components'] as $key => $value) {
-            // Безопасно достаем options, если их нет — будет пустой массив
-            $options = $value['options'] ?? [];
+        $this->registerComponents($this->configFile['components'] ?? []);
 
-            $className = $value['class'];
-
-            if (class_exists($className)) {
-                // Динамически создаем свойство и записываем объект
-                $this->$key = new $className($options);
-            } else {
-                throw new \Exception("Component class '$className' not found.");
-            }
-        }
-
-
-
-//
-//        $this->controller = $this->request->getSegments()[0];
-//        $this->action = $this->request->getSegments()[1];
-
-
+        $this->router = new Router($this->request, $this->container);
+        $this->container->singleton(Router::class, $this->router);
     }
 
-    public function t($category, $message, $params = [])
+    private function registerComponents(array $components): void
+    {
+        foreach ($components as $id => $config) {
+            $className = $config['class'] ?? null;
+            if (!$className || !class_exists($className)) {
+                throw new \RuntimeException("Component class '{$className}' not found.");
+            }
+
+            $options = $config['options'] ?? [];
+            $instance = $this->createComponent($className, $options);
+
+            $this->container->singleton($className, $instance);
+            $this->container->singleton($id, $instance);
+
+            // Temporary compatibility layer. Components will move out of App
+            // properties once controllers/views stop using the old API.
+            $this->{$id} = $instance;
+        }
+    }
+
+    private function createComponent(string $className, array $options): object
+    {
+        $instance = $options === []
+            ? $this->container->get($className)
+            : $this->container->build($className);
+
+        foreach ($options as $property => $value) {
+            if (!property_exists($instance, $property)) {
+                throw new \RuntimeException(
+                    "Property '{$property}' does not exist in component class '{$className}'."
+                );
+            }
+            $instance->{$property} = $value;
+        }
+
+        return $instance;
+    }
+
+    public function t(string $category, string $message, array $params = []): string
     {
         return I18n::t($category, $message, $params);
     }
 
-    public function dd($arr, $die = 1)
+    public function dd(mixed $value, bool $die = true): void
     {
-
-
-        if ($die == 1) {
-            echo "<pre>";
-            print_r($arr);
-            echo "</pre>";
+        echo '<pre>';
+        print_r($value);
+        echo '</pre>';
+        if ($die) {
             die;
-        } else {
-            echo "<pre>";
-            print_r($arr);
-            echo "</pre>";
         }
-
     }
 
-    public function config($keyName)
+    public function config(?string $keyName = null): mixed
     {
-        return $this->configFile[$keyName];
+        return $keyName === null
+            ? $this->configFile
+            : ($this->configFile[$keyName] ?? null);
     }
 
-    public static function powered()
+    public static function powered(): string
     {
         return '<a href="https://vk.com/deepn9x">deepn9x</a>';
     }
 
-    public function run()
+    public function run(): mixed
     {
         try {
-
             return $this->router->resolve();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
+            $code = (int) $e->getCode();
+            if ($code < 400 || $code > 599) {
+                $code = 500;
+            }
 
-            $code = $e->getCode();
-
-            $controller = new \app\controllers\ErrorController();
-
-
-            // ✅ РЕГИСТРИРУЕМ ОБРАБОТЧИК ОШИБОК
             ErrorHandler::log($e, $code);
-
-            return $controller->actionIndex(
-                $code,
-                $e->getMessage(),
-            );
+            return Response::error($code, $e->getMessage());
         }
     }
-
-
-    // ------------------------
-    // Методы для alias
-    // ------------------------
-    public static function getAlias($key)
-    {
-        return (new App)->config($key)[$key] ?? null;
-    }
-
-
 }
