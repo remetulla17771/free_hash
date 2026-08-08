@@ -23,8 +23,8 @@ final class Query
     public function __construct(
         private string $modelClass,
         private Db $db,
-        private ?ModelFactory $modelFactory = null,
-        private ?QueryExecutor $executor = null,
+        private ModelFactory $modelFactory,
+        private QueryExecutor $executor,
     ) {}
 
     public function alias(string $alias): self { $this->aliasValue = $this->identifier($alias); return $this; }
@@ -89,16 +89,13 @@ final class Query
     private function identifier(string $value): string { if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value)) throw new RuntimeException("Invalid SQL identifier: {$value}"); return '`' . $value . '`'; }
     private function identifierPath(string $value): string { $parts = explode('.', $value); if ($parts === [] || count($parts) > 2) throw new RuntimeException("Invalid SQL identifier path: {$value}"); return implode('.', array_map(fn ($part) => $this->identifier($part), $parts)); }
     public function one(): ?ActiveRecord { $this->limit(1); return $this->all()[0] ?? null; }
-    public function count(): int { [$sql, $params] = $this->compileSql('COUNT(*) AS cnt'); $row = $this->executor()->fetchOne($sql, $params); return (int) ($row['cnt'] ?? 0); }
+    public function count(): int { [$sql, $params] = $this->compileSql('COUNT(*) AS cnt'); $row = $this->executor->fetchOne($sql, $params); return (int) ($row['cnt'] ?? 0); }
     public function all(): array
     {
         [$sql, $params] = $this->compileSql('*');
-        $rows = $this->executor()->fetchAll($sql, $params);
-        $factory = $this->modelFactory ?? $this->defaultModelFactory();
-        return array_map(fn (array $row): ActiveRecord => $factory->hydrate($this->modelClass, $row), $rows);
+        $rows = $this->executor->fetchAll($sql, $params);
+        return array_map(fn (array $row): ActiveRecord => $this->modelFactory->hydrate($this->modelClass, $row), $rows);
     }
-    private function executor(): QueryExecutor { return $this->executor ??= new QueryExecutor($this->db->pdo()); }
-    private function defaultModelFactory(): ModelFactory { $container = new Container(); $container->singleton(Db::class, $this->db); return new ModelFactory($container); }
     public function compileSql(string $select = '*'): array
     {
         $model = $this->modelClass;
