@@ -21,18 +21,19 @@ final class App
     public string $title = 'My App';
     private array $configFile;
 
-    public function __construct(?Container $container = null)
+    public function __construct(?Container $container = null, ?Request $request = null)
     {
         $this->container = $container ?? new Container();
         $this->configFile = require __DIR__ . '/config/web.php';
 
-        $this->request = new Request();
+        $this->container->singleton(Container::class, $this->container);
+        $this->container->singleton(self::class, $this);
+
+        $this->request = $request ?? $this->container->get(HttpRequestFactory::class)->create();
         $this->response = new Response();
 
-        $this->container->singleton(Container::class, $this->container);
         $this->container->singleton(Request::class, $this->request);
         $this->container->singleton(Response::class, $this->response);
-        $this->container->singleton(self::class, $this);
         $this->container->alias('request', Request::class);
         $this->container->alias('response', Response::class);
 
