@@ -17,7 +17,7 @@ abstract class ActiveRecord implements JsonSerializable
     abstract public static function tableName(): string;
     abstract public function attributeLabels();
 
-    public function __construct(protected ?Db $db = null, protected ?RecordPersister $persister = null) {}
+    public function __construct(protected ?Db $db = null, protected ?RecordPersister $persister = null, protected ?QueryFactory $queryFactory = null) {}
 
     protected function database(): Db
     {
@@ -26,6 +26,7 @@ abstract class ActiveRecord implements JsonSerializable
     }
 
     protected function recordPersister(): RecordPersister { return $this->persister ??= new RecordPersister($this->database()); }
+    protected function queryFactory(): QueryFactory { return $this->queryFactory ??= new QueryFactory(new ModelFactory(new Container()), new QueryExecutor($this->database()->pdo())); }
     public function jsonSerialize(): mixed { return $this->toArray(); }
     public function toArray(): array { return $this->attributes; }
     public function isNewRecord(): bool { return $this->isNewRecord; }
@@ -71,7 +72,7 @@ abstract class ActiveRecord implements JsonSerializable
     }
 
     private function requiredAttribute(string $name): mixed { if (!$this->hasAttribute($name)) throw new RuntimeException("Relation key '{$name}' is not loaded."); return $this->attributes[$name]; }
-    public static function find(Db $db): Query { return new Query(static::class, $db); }
+    public static function find(Db $db): Query { return (new static($db))->queryFactory()->create(static::class, $db); }
     public static function findOne(int $id, Db $db): ?static { return static::find($db)->where(['id' => $id])->one(); }
 
     public function delete(): bool
