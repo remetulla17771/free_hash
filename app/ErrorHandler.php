@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
-use app\controllers\ErrorController;
+use Throwable;
 
-class ErrorHandler
+final class ErrorHandler
 {
-
     private static bool $handling = false;
 
     public static function register(): void
@@ -16,162 +17,87 @@ class ErrorHandler
         register_shutdown_function([self::class, 'handleShutdown']);
     }
 
-    public static function handleException(\Throwable $e): void
+    public static function handleException(Throwable $e): void
     {
         self::render($e);
     }
 
-    public static function handleError(
-        int $severity,
-        string $message,
-        string $file,
-        int $line
-    ): bool {
-        // превращаем error в exception
-        throw new \ErrorException($message, 500, $severity, $file, $line);
+    public static function handleError(int $severity, string $message, string $file, int $line): bool
+    {
+        if (!(error_reporting() & $severity)) {
+            return false;
+        }
+
+        throw new \ErrorException($message, 0, $severity, $file, $line);
     }
 
     public static function handleShutdown(): void
     {
         $error = error_get_last();
-
-        if ($error && in_array($error['type'], [
-                E_ERROR,
-                E_PARSE,
-                E_CORE_ERROR,
-                E_COMPILE_ERROR,
-                E_RECOVERABLE_ERROR,
-                E_CORE_WARNING,
-                E_COMPILE_WARNING
-            ])) {
-            self::render(new \ErrorException(
-                $error['message'],
-                500,
-                $error['type'],
-                $error['file'],
-                $error['line']
-            ));
+        if ($error === null) {
+            return;
         }
+
+        $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_RECOVERABLE_ERROR];
+        if (!in_array($error['type'], $fatalTypes, true)) {
+            return;
+        }
+
+        self::render(new \ErrorException(
+            $error['message'],
+            0,
+            $error['type'],
+            $error['file'],
+            $error['line']
+        ));
     }
 
-//    public static function handleShutdown(): void
-//    {
-//        $error = error_get_last();
-//
-//        if (!$error || $error['type'] !== E_PARSE) {
-//            return;
-//        }
-//
-//        while (ob_get_level()) {
-//            ob_end_clean();
-//        }
-//
-//        http_response_code(500);
-//
-//        require_once __DIR__ . '/controllers/ErrorController.php';
-//
-//        $controller = new \app\controllers\ErrorController();
-//        echo $controller->actionIndex(
-//            new \ParseError($error['message']),
-//            $error['file'],
-//            $error['line']
-//        );
-//        exit;
-//    }
-
-
-
-
-    private static function render(\Throwable $e): void
+    public static function toStatusCode(Throwable $e): int
     {
-        $code = $e->getCode();
-        if ($code < 400 || $code >= 600) {
-            $code = 500;
-        }
-        http_response_code(500);
-        if (self::$handling) {
-            http_response_code(500);
-            echo 'Critical error: ' . $e->getMessage();
-            exit;
-        }
-
-
-        self::$handling = true;
-
-        // === ЛОГ ===
-        self::log($e, $code);
-
-        // === РЕНДЕР ===
-        $controller = new ErrorController();
-        echo $controller->actionIndex($code, $e->getMessage(), $e);
-
-        exit;
+        $code = (int) $e->getCode();
+        return $code >= 400 && $code <= 599 ? $code : 500;
     }
 
-    public static function log(\Throwable $e, int $code): void
+    public static function log(Throwable $e, int $code): void
     {
         $dir = dirname(__DIR__) . '/runtime/logs';
-
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0775, true);
         }
-
-        // === GLOBAL ID ===
-        $counterFile = $dir . '/error.counter';
-
-        if (file_exists($counterFile)) {
-            $id = (int) file_get_contents($counterFile) + 1;
-        } else {
-            $id = 1;
-        }
-
-        file_put_contents($counterFile, $id, LOCK_EX);
-
-        // === FILE ROTATION ===
-        $chunkSize = 5000;
-        $fileIndex = (int) ceil($id / $chunkSize);
-
-        $fileName = $fileIndex === 1
-            ? 'error.json'
-            : 'error_' . $fileIndex . '.json';
-
-        $file = $dir . '/' . $fileName;
 
         $record = [
-            'id'      => $id,
-            'time'    => date('Y-m-d H:i:s'),
-            'code'    => $code,
-            'type'    => get_class($e),
+            'time' => date(DATE_ATOM),
+            'code' => $code,
+            'type' => get_class($e),
             'message' => $e->getMessage(),
-            'file'    => $e->getFile(),
-            'line'    => $e->getLine(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
         ];
 
-        // === READ CURRENT FILE ===
-        if (file_exists($file)) {
-            $content = file_get_contents($file);
-            $data = json_decode($content, true);
-
-            if (!is_array($data)) {
-                $data = [];
-            }
-        } else {
-            $data = [];
-        }
-
-        // 👇 новые сверху
-        array_unshift($data, $record);
-
         file_put_contents(
-            $file,
-            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
-            LOCK_EX
+            $dir . '/error.log',
+            json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
+            FILE_APPEND | LOCK_EX
         );
     }
 
+    private static function render(Throwable $e): void
+    {
+        if (self::$handling) {
+            http_response_code(500);
+            echo 'Internal Server Error';
+            return;
+        }
 
+        self::$handling = true;
+        $code = self::toStatusCode($e);
+        self::log($e, $code);
 
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
 
-
-
+        http_response_code($code);
+        echo 'Internal Server Error';
+    }
 }

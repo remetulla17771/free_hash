@@ -1,73 +1,74 @@
 <?php
 
+declare(strict_types=1);
 
 namespace app;
 
+use app\helpers\Session;
 use app\models\User;
+use app\repositories\UserRepository;
 
-class AuthService
+final class AuthService
 {
     private const SESSION_KEY = '__user_id';
-    public $user;
 
-    public function __construct()
-    {
-        if (!isset($_SESSION[self::SESSION_KEY])) {
-            return null;
-        }
+    private ?User $user = null;
 
-        $this->user = User::findIdentity($_SESSION[self::SESSION_KEY]);
+    public function __construct(
+        private UserRepository $users,
+        private Session $session,
+    ) {
+        $this->loadIdentity();
     }
 
-    public static function login(string $username, string $password): bool
+    public function login(string $username, string $password): bool
     {
-        $user = User::findByUsername($username);
+        $user = $this->users->findByUsername($username);
 
-        if (!$user) {
+        if (!$user || !$user->validatePassword($password)) {
             return false;
         }
 
-        if (!$user->validatePassword($password)) {
-            return false;
-        }
-
-        $_SESSION[self::SESSION_KEY] = $user->getId();
+        $this->session->set(self::SESSION_KEY, $user->getId());
+        $this->user = $user;
         return true;
     }
 
-    public static function logout(): void
+    public function logout(): void
     {
-        unset($_SESSION[self::SESSION_KEY]);
+        $this->session->remove(self::SESSION_KEY);
+        $this->user = null;
     }
 
-    public static function identity($key = null)
+    public function identity(?string $key = null): mixed
     {
-        if (!isset($_SESSION[self::SESSION_KEY])) {
-            return null;
-        }
-
-        static $identity = null;
-
-        if ($identity === null) {
-            $identity = User::findIdentity($_SESSION[self::SESSION_KEY]);
-        }
-
-        if (!$identity) {
-            return null;
+        if ($this->user === null) {
+            $this->loadIdentity();
         }
 
         if ($key === null) {
-            return $identity;
+            return $this->user;
         }
 
-        // 👇 ВАЖНО: ActiveRecord + __get()
-        return $identity->$key ?? null;
+        return $this->user?->{$key};
     }
 
-
-
-    public static function isGuest(): bool
+    public function isGuest(): bool
     {
-        return self::identity() === null;
+        return $this->identity() === null;
+    }
+
+    private function loadIdentity(): void
+    {
+        $id = $this->session->get(self::SESSION_KEY);
+        if ($id === null) {
+            return;
+        }
+
+        $this->user = $this->users->findIdentity((int) $id);
+
+        if ($this->user === null) {
+            $this->session->remove(self::SESSION_KEY);
+        }
     }
 }

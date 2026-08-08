@@ -1,110 +1,105 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
-class Controller extends App
+class Controller
 {
     public string $layout = 'main';
 
-    protected function getModuleId(): ?string
+    public Request $request;
+    public Response $response;
+    public Container $container;
+    public ViewRenderer $view;
+
+    // Temporary compatibility for the existing application layer.
+    public mixed $user = null;
+    public mixed $urlManager = null;
+    public mixed $language = null;
+    public mixed $session = null;
+    public mixed $arrayHelper = null;
+    public mixed $stringer = null;
+
+    public function __construct(Container $container)
     {
-        $ref = new \ReflectionClass($this);
-        $ns = $ref->getNamespaceName(); // modules\admin\controllers или app\controllers
+        $this->container = $container;
+        $this->request = $container->get(Request::class);
+        $this->response = $container->get(Response::class);
+        $this->view = $container->get(ViewRenderer::class);
 
-        if (strpos($ns, 'modules\\') !== 0) {
-            return null;
-        }
-
-        $parts = explode('\\', $ns); // ['modules','admin','controllers']
-        return $parts[1] ?? null;
+        $this->user = $this->getComponent('user');
+        $this->urlManager = $this->getComponent('urlManager');
+        $this->language = $this->getComponent('language');
+        $this->session = $this->getComponent('session');
+        $this->arrayHelper = $this->getComponent('arrayHelper');
+        $this->stringer = $this->getComponent('stringer');
     }
 
-    protected function getBaseViewPath(): string
+    private function getComponent(string $id): mixed
     {
-        $moduleId = $this->getModuleId();
-        if ($moduleId) {
-            return __DIR__ . "/../modules/{$moduleId}/views";
-        }
-        return __DIR__ . "/../views";
+        return $this->container->has($id) ? $this->container->get($id) : null;
     }
 
-    protected function createUrl(array $route): string
+    public function createUrl(array $route): string
     {
-        $path = trim($route[0], '/');
+        $path = trim((string) ($route[0] ?? ''), '/');
         unset($route[0]);
-
-        if (!empty($route)) {
-            $path .= '?' . http_build_query($route);
-        }
-
-        return '/' . $path;
+        return '/' . $path . (!empty($route) ? '?' . http_build_query($route) : '');
     }
 
-    public function redirect($url, int $status = 302)
+    public function redirect(string|array $url, int $status = 302): Response
     {
+        if (is_array($url)) {
+            $path = trim((string) ($url[0] ?? ''), '/');
+            unset($url[0]);
+            $url = '/' . $path . (!empty($url) ? '?' . http_build_query($url) : '');
+        }
 
-        return $this->response->redirect($url, $status, $this->getControllerName());
+        return $this->response->redirect($url, $status);
     }
 
     public function render(string $view, array $params = []): string
-    {
-        $content = $this->renderView($view, $params);
-        return $this->renderLayout($content);
-    }
-
-    protected function renderView(string $view, array $params): string
     {
         $controller = strtolower(
             str_replace('Controller', '', (new \ReflectionClass($this))->getShortName())
         );
 
-        $base = $this->getBaseViewPath();
-        $viewFile = $base . "/{$controller}/{$view}.php";
-
-        if (!file_exists($viewFile)) {
-            throw new \Exception('Не найден вид: ' . $viewFile, 500);
-        }
-
-        extract($params, EXTR_SKIP);
-
-        ob_start();
-        require $viewFile;
-        return ob_get_clean();
+        return $this->view->render($controller . '/' . $view, $params, $this->layout);
     }
 
-    public function renderPartial(string $view, array $params = [])
+    public function renderPartial(string $view, array $params = []): string
     {
-        return $this->renderView($view, $params);
+        $controller = strtolower(
+            str_replace('Controller', '', (new \ReflectionClass($this))->getShortName())
+        );
+
+        return $this->view->partial($controller . '/' . $view, $params);
     }
 
-    protected function renderLayout(string $content): string
+    public function config(?string $key = null): mixed
     {
-        // сначала layout модуля, если контроллер из модуля
-        $base = $this->getBaseViewPath();
-        $layoutFile = $base . "/layouts/{$this->layout}.php";
-
-        // если нет — глобальный layout
-        if (!file_exists($layoutFile)) {
-            $layoutFile = __DIR__ . "/../views/layouts/{$this->layout}.php";
-        }
-
-        if (!file_exists($layoutFile)) {
-            throw new \Exception("Layout not found: {$layoutFile}");
-        }
-
-        ob_start();
-        require $layoutFile;
-        return ob_get_clean();
+        $config = $this->container->get(App::class)->config();
+        return $key === null ? $config : ($config[$key] ?? null);
     }
 
-    private function getControllerName()
+    public function t(string $category, string $message, array $params = []): string
     {
-        return new \ReflectionClass($this);
+        return \app\helpers\I18n::t($category, $message, $params);
     }
 
-    public function actions()
+    public function dd(mixed $value, bool $die = true): void
+    {
+        echo '<pre>';
+        print_r($value);
+        echo '</pre>';
+        if ($die) {
+            die;
+        }
+    }
+
+    public function actions(): array
     {
         return [];
     }
-
 }

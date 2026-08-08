@@ -1,59 +1,54 @@
 <?php
 
+declare(strict_types=1);
 
 namespace app\helpers;
 
-class Session
+final class Session
 {
-    public function __construct()
+    public function __construct(private array $data = [])
     {
-        if (isset($_SESSION)) {
-            foreach ($_SESSION as $key => $value) {
-                $this->$key = $value;
-            }
-        }
-
     }
 
-    public function get($key = null)
+    public static function fromGlobals(): self
     {
-
-        if(is_array($key)){
-
-            $result = [];
-
-            foreach ($key as $k) {
-                $result[$k] = $_SESSION[$k];
-            }
-
-            return $result;
-
-        }
-        elseif ($key){
-            return $_SESSION[$key] ?: null;
-        }
-        else{
-            return $_SESSION;
-        }
-
-
+        return new self($_SESSION ?? []);
     }
 
-    public function setArray($array)
+    public function get(?string $key = null, mixed $default = null): mixed
     {
-        foreach ($array as $key => $value){
-            $_SESSION[$key] = $value;
+        if ($key === null) {
+            return $this->data;
         }
+
+        return $this->data[$key] ?? $default;
     }
 
-    public function set($key, $value)
+    public function has(string $key): bool
     {
+        return array_key_exists($key, $this->data);
+    }
+
+    public function set(string $key, mixed $value): void
+    {
+        $this->data[$key] = $value;
         $_SESSION[$key] = $value;
     }
 
-    public function remove($key)
+    public function setArray(array $values): void
     {
-        unset($_SESSION[$key]);
+        foreach ($values as $key => $value) {
+            $this->set((string) $key, $value);
+        }
+    }
+
+    public function remove(string $key): void
+    {
+        unset($this->data[$key], $_SESSION[$key]);
+    }
+
+    public function all(): array
+    {
+        return $this->data;
     }
 }
-

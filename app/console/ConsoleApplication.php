@@ -1,51 +1,80 @@
 <?php
+
 declare(strict_types=1);
 
 namespace app\console;
 
-class ConsoleApplication
+use app\Container;
+use app\Db;
+
+final class ConsoleApplication
 {
     /** @var array<string, CommandInterface> */
     private array $commands = [];
 
-    public function __construct()
+    public function __construct(private Container $container)
     {
-        $this->register(new HelpCommand($this));
-        $this->register(new MakeControllerCommand());
-        $this->register(new MakeModelCommand());
-        $this->register(new MakeCrudCommand());
-        $this->register(new MakeMigrationCommand());
-        $this->register(new MigrateCommand());
-        $this->register(new MakeModuleCommand());
-        $this->register(new MakeCommand());
+        $config = require dirname(__DIR__) . '/config/web.php';
+        $db = $this->container->has(Db::class)
+            ? $this->container->get(Db::class)
+            : Db::fromConfig($config['database'] ?? []);
 
+        $this->container->singleton(Db::class, $db);
+        $this->container->singleton(Container::class, $this->container);
+
+        $this->register(new HelpCommand($this));
+        $this->register($this->container->get(MakeControllerCommand::class));
+        $this->register($this->container->get(MakeModelCommand::class));
+        $this->register($this->container->get(MakeCrudCommand::class));
+        $this->register($this->container->get(MakeMigrationCommand::class));
+        $this->register($this->container->get(MigrateCommand::class));
+        $this->register($this->container->get(MakeModuleCommand::class));
+        $this->register($this->container->get(MakeCommand::class));
+
+        $this->discoverGeneratedCommands();
     }
 
-    public function register(CommandInterface $c): void
+    public function register(CommandInterface $command): void
     {
-        $this->commands[$c->name()] = $c;
+        $this->commands[$command->name()] = $command;
     }
 
     /** @return array<string, CommandInterface> */
-    public function all(): array
-    {
-        return $this->commands;
-    }
+    public function all(): array { return $this->commands; }
 
     public function run(array $argv): int
     {
-        $in = new Input($argv);
-        $out = new Output();
+        $input = new Input($argv);
+        $output = new Output();
+        $command = $input->command();
 
-        $cmd = $in->command();
-        if ($cmd === null) return $this->commands['help']->execute($in, $out);
-
-        if (!isset($this->commands[$cmd])) {
-            $out->err("Unknown command: $cmd");
-            $out->line("Run: php bin/console help");
+        if ($command === null) return $this->commands['help']->execute($input, $output);
+        if (!isset($this->commands[$command])) {
+            $output->err("Unknown command: {$command}");
+            $output->line('Run: php console help');
             return 1;
         }
 
-        return $this->commands[$cmd]->execute($in, $out);
+        try {
+            return $this->commands[$command]->execute($input, $output);
+        } catch (\Throwable $e) {
+            $output->err($e->getMessage());
+            return 1;
+        }
+    }
+
+    private function discoverGeneratedCommands(): void
+    {
+        foreach (glob(__DIR__ . '/*Command.php') ?: [] as $file) {
+            $class = __NAMESPACE__ . '\\' . basename($file, '.php');
+            if ($class === HelpCommand::class || !class_exists($class) || !is_subclass_of($class, CommandInterface::class)) continue;
+            try {
+                $command = $this->container->get($class);
+                if ($command instanceof CommandInterface) $this->register($command);
+            } catch (\Throwable) {
+                // A generated command with unresolved dependencies should not prevent
+                // the built-in CLI from starting.
+            }
+        }
     }
 }

@@ -1,87 +1,40 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
-use ReflectionClass;
-
-class Response
+final class Response
 {
-    protected int $statusCode = 200;
-    protected array $headers = [];
-    protected string $content = '';
-
-    /* =====================
-       FACTORIES
-    ===================== */
+    private int $statusCode = 200;
+    private array $headers = [];
+    private string $content = '';
 
     public static function html(string $content, int $status = 200): self
     {
-        $res = new self();
-        $res->statusCode = $status;
-        $res->content = $content;
-        $res->setHeader('Content-Type', 'text/html; charset=utf-8');
-        return $res;
+        return (new self())
+            ->setStatusCode($status)
+            ->setHeader('Content-Type', 'text/html; charset=utf-8')
+            ->setContent($content);
     }
 
-    public static function json($data, int $status = 200): self
+    public static function json(mixed $data, int $status = 200): self
     {
-        $res = new self();
-        $res->statusCode = $status;
-
-        if (is_array($data)) {
-            $data = array_map(function ($item) {
-                return $item instanceof \app\ActiveRecord
-                    ? $item->toArray()
-                    : $item;
-            }, $data);
-        } elseif ($data instanceof \app\ActiveRecord) {
-            $data = $data->toArray();
-        }
-
-        $res->content = json_encode($data, JSON_UNESCAPED_UNICODE);
-        $res->setHeader('Content-Type', 'application/json');
-
-        return $res;
+        return (new self())
+            ->setStatusCode($status)
+            ->setHeader('Content-Type', 'application/json; charset=utf-8')
+            ->setContent(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 
-    protected static function createUrl($route): string
+    public static function redirect(string $url, int $status = 302): self
     {
-
-
-        $path = '?' . http_build_query($route);
-
-
-        return '/' . $path;
-    }
-
-    public static function redirect($url, int $status = 302, $controller = null): self
-    {
-        $res = new self();
-        $res->statusCode = $status;
-
-        $controllerName = null;
-        if ($controller !== null) {
-            // Если передан ReflectionClass, берем короткое имя класса (например, SiteController)
-            if ($controller instanceof \ReflectionClass) {
-                $shortName = $controller->getShortName();
-            } else {
-                // Фолбек на случай, если передали обычную строку или объект
-                $className = is_object($controller) ? get_class($controller) : $controller;
-                $parts = explode('\\', $className);
-                $shortName = end($parts);
-            }
-
-            // Отрезаем суффикс "Controller" и приводим первую букву к нижнему регистру (SiteController -> site)
-            $controllerName = lcfirst(str_replace('Controller', '', $shortName));
+        if ($status < 300 || $status > 399) {
+            throw new \InvalidArgumentException('Redirect status must be between 300 and 399.');
         }
 
-        if (is_array($url)) {
-            $url = self::buildUrl($url, $controllerName);
-        }
-        else $url = $url;
-
-        $res->setHeader('Location', $url);
-        return $res;
+        return (new self())
+            ->setStatusCode($status)
+            ->setHeader('Location', $url);
     }
 
     public static function error(int $code, string $message = ''): self
@@ -89,54 +42,45 @@ class Response
         return self::html($message, $code);
     }
 
-    /* =====================
-       CORE
-    ===================== */
+    public function setStatusCode(int $statusCode): self
+    {
+        if ($statusCode < 100 || $statusCode > 599) {
+            throw new \InvalidArgumentException('Invalid HTTP status code.');
+        }
+
+        $this->statusCode = $statusCode;
+        return $this;
+    }
+
+    public function getStatusCode(): int
+    {
+        return $this->statusCode;
+    }
 
     public function setHeader(string $name, string $value): self
     {
+        $name = trim($name);
+        if ($name === '' || preg_match('/[\r\n]/', $name . $value)) {
+            throw new \InvalidArgumentException('Invalid HTTP header.');
+        }
+
         $this->headers[$name] = $value;
         return $this;
     }
 
-    public function send(): void
+    public function getHeaders(): array
     {
-        http_response_code($this->statusCode);
-
-        foreach ($this->headers as $name => $value) {
-            header("$name: $value");
-        }
-
-        echo $this->content;
-        exit;
+        return $this->headers;
     }
 
-    /* =====================
-       HELPERS
-    ===================== */
-
-    protected static function buildUrl(array $route, ?string $controller = null): string
+    public function setContent(string $content): self
     {
-        $path = $route[0];
-        unset($route[0]);
+        $this->content = $content;
+        return $this;
+    }
 
-        // 1. Проверяем, является ли путь абсолютным (начинается с '/')
-        $isAbsolute = (strpos($path, '/') === 0);
-        $path = trim($path, '/');
-
-        // 2. Проверяем, указан ли уже какой-то контроллер в пути (есть ли слэш внутри, например 'site/index')
-        $hasControllerInPath = (strpos($path, '/') !== false);
-
-        // Если путь относительный, в нем нет своего контроллера, и нам передан текущий контроллер
-        if (!$isAbsolute && !$hasControllerInPath && $controller !== null) {
-            $path = $controller . '/' . $path;
-        }
-
-        // 3. Добавляем GET-параметры (например, 'page' => 1 превратится в ?page=1)
-        if (!empty($route)) {
-            $path .= '?' . http_build_query($route);
-        }
-
-        return '/' . $path;
+    public function getContent(): string
+    {
+        return $this->content;
     }
 }

@@ -1,49 +1,72 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
 use PDO;
+use RuntimeException;
 
-class Db
+final class Db
 {
-    private static ?PDO $pdo = null;
+    private static ?self $instance = null;
 
-    public static function getInstance(): PDO
+    public function __construct(private PDO $pdo)
     {
+    }
 
+    public function pdo(): PDO
+    {
+        return $this->pdo;
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        $this->pdo->beginTransaction();
         try {
-            $config = require __DIR__ . '/config/db.php';
+            $result = $callback($this->pdo);
+            $this->pdo->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $e;
+        }
+    }
 
-            self::$pdo = new PDO(
-                $config['dsn'],
-                $config['user'],
-                $config['password'],
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                ]
-            );
+    public function lastInsertId(): string
+    {
+        return $this->pdo->lastInsertId();
+    }
 
-            return self::$pdo;
-
-        } catch (\Throwable $e){
-            $controller = new \app\controllers\ErrorController();
-            $code = $e->getCode();
-            if ($code < 400 || $code >= 600) {
-                $code = 500;
-            }
-
-            // ✅ РЕГИСТРИРУЕМ ОБРАБОТЧИК ОШИБОК
-            \app\ErrorHandler::log($e, $code);
-
-            echo $controller->actionIndex(
-                $code,
-                $e->getMessage(),
-                $e
-            );
-            die;
+    public static function fromConfig(array $config): self
+    {
+        foreach (['dsn', 'user', 'password'] as $key) {
+            if (!array_key_exists($key, $config)) throw new RuntimeException("Database config is missing '{$key}'.");
         }
 
+        $pdo = new PDO(
+            (string) $config['dsn'],
+            (string) $config['user'],
+            (string) $config['password'],
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]
+        );
 
+        return self::$instance = new self($pdo);
+    }
+
+    /**
+     * Legacy compatibility for generators that have not yet been converted to constructor DI.
+     * New application code should inject Db instead.
+     */
+    public static function getInstance(): PDO
+    {
+        if (self::$instance === null) {
+            throw new RuntimeException('Database is not initialized. Create Db from configuration first.');
+        }
+        return self::$instance->pdo();
     }
 }

@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app\models;
 
 use app\ActiveRecord;
 use app\Auth;
+use app\Db;
 
 class User extends ActiveRecord implements Auth
 {
@@ -17,30 +20,26 @@ class User extends ActiveRecord implements Auth
         return [
             'login' => 'Логин',
             'password' => 'Пароль',
-            'token' => 'Токен'
+            'token' => 'Токен',
         ];
     }
 
-    /* ========== Identity ========== */
-
-    public static function findIdentity($id)
+    public static function findIdentity(int $id, Db $db): ?static
     {
-        return static::findOne($id);
+        return static::findOne($id, $db);
     }
 
-    public static function findByUsername(string $username)
+    public static function findByUsername(string $username, Db $db): ?static
     {
-        return static::find()
+        return static::find($db)
             ->where(['login' => $username])
             ->one();
     }
 
-    public function getId()
+    public function getId(): mixed
     {
         return $this->getPrimaryKey('id');
     }
-
-    /* ========== Password ========== */
 
     public function validatePassword(string $password): bool
     {
@@ -51,5 +50,4 @@ class User extends ActiveRecord implements Auth
     {
         return $this->hasMany(News::class, ['user_id' => 'id']);
     }
-
 }

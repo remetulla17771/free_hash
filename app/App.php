@@ -1,116 +1,124 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
 
 use app\helpers\I18n;
-use app\ErrorHandler;
+use Throwable;
 
-
-class App
+final class App
 {
-    /**
-     * @var mixed|null
-     */
+    private static ?self $instance = null;
 
     public Request $request;
     public Response $response;
     public Router $router;
+    public Container $container;
+    public Dispatcher $dispatcher;
+    public MiddlewareDispatcher $middleware;
+    public ModuleManager $modules;
+    public Db $db;
 
-    public $title = "My App";
-    private $configFile;
+    public string $title = 'My App';
+    private array $configFile;
 
-    public function __construct()
+    public function __construct(?Container $container = null, ?Request $request = null)
     {
-        $this->request = new Request();
-        $this->router = new Router($this->request);
+        self::$instance = $this;
+        $this->container = $container ?? new Container();
+        $this->configFile = require __DIR__ . '/config/web.php';
 
-        $this->configFile = require "config/web.php";
+        $this->container->singleton(Container::class, $this->container);
+        $this->container->singleton(self::class, $this);
 
-        foreach ($this->configFile['components'] as $key => $value) {
-            // Безопасно достаем options, если их нет — будет пустой массив
-            $options = $value['options'] ?? [];
+        $this->request = $request ?? $this->container->get(HttpRequestFactory::class)->create();
+        $this->response = new Response();
 
-            $className = $value['class'];
+        $this->container->singleton(Request::class, $this->request);
+        $this->container->singleton(Response::class, $this->response);
+        $this->container->alias('request', Request::class);
+        $this->container->alias('response', Response::class);
 
-            if (class_exists($className)) {
-                // Динамически создаем свойство и записываем объект
-                $this->$key = new $className($options);
-            } else {
-                throw new \Exception("Component class '$className' not found.");
-            }
+        $this->db = Db::fromConfig($this->configFile['database'] ?? []);
+        $this->container->singleton(Db::class, $this->db);
+        $this->container->singleton(ModelFactory::class, new ModelFactory($this->container));
+        $this->container->singleton(QueryExecutor::class, new QueryExecutor($this->db->pdo()));
+        $this->container->singleton(QueryFactory::class, new QueryFactory($this->container->get(ModelFactory::class)));
+
+        $this->registerComponents($this->configFile['components'] ?? []);
+        $this->registerServices($this->configFile['services'] ?? []);
+
+        $this->modules = new ModuleManager($this->container, $this->configFile['modules'] ?? []);
+        $this->container->singleton(ModuleManager::class, $this->modules);
+
+        $this->container->singleton(ViewRenderer::class, new ViewRenderer(__DIR__ . '/../views'));
+        $this->router = new Router($this->request, $this->modules);
+        $this->container->singleton(Router::class, $this->router);
+        $this->dispatcher = new Dispatcher($this->container);
+        $this->container->singleton(Dispatcher::class, $this->dispatcher);
+
+        $middleware = $this->configFile['middleware'] ?? [];
+        $this->middleware = new MiddlewareDispatcher($this->container, $middleware);
+        $this->container->singleton(MiddlewareDispatcher::class, $this->middleware);
+    }
+
+    public static function instance(): self
+    {
+        if (self::$instance === null) throw new \RuntimeException('Application has not been initialized.');
+        return self::$instance;
+    }
+
+    private function registerComponents(array $components): void
+    {
+        foreach ($components as $id => $config) {
+            $className = $config['class'] ?? null;
+            if (!is_string($className) || !class_exists($className)) throw new \RuntimeException("Component class '{$className}' not found.");
+            $instance = $this->createConfiguredService($className, $config['options'] ?? []);
+            $this->container->singleton($className, $instance);
+            $this->container->singleton((string) $id, $instance);
+            if (property_exists($this, (string) $id)) $this->{$id} = $instance;
         }
-
-
-
-//
-//        $this->controller = $this->request->getSegments()[0];
-//        $this->action = $this->request->getSegments()[1];
-
-
     }
 
-    public function t($category, $message, $params = [])
+    private function registerServices(array $services): void
     {
-        return I18n::t($category, $message, $params);
-    }
-
-    public function dd($arr, $die = 1)
-    {
-
-
-        if ($die == 1) {
-            echo "<pre>";
-            print_r($arr);
-            echo "</pre>";
-            die;
-        } else {
-            echo "<pre>";
-            print_r($arr);
-            echo "</pre>";
+        foreach ($services as $id => $config) {
+            $className = $config['class'] ?? null;
+            if (!is_string($className) || !class_exists($className)) throw new \RuntimeException("Service class '{$className}' not found.");
+            $this->container->singleton($className, $this->createConfiguredService($className, $config['options'] ?? []));
+            $this->container->alias((string) $id, $className);
         }
-
     }
 
-    public function config($keyName)
+    private function createConfiguredService(string $className, array $options): object
     {
-        return $this->configFile[$keyName];
+        $instance = $this->container->build($className);
+        foreach ($options as $property => $value) {
+            if (!property_exists($instance, $property)) throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
+            $instance->{$property} = $value;
+        }
+        return $instance;
     }
 
-    public static function powered()
-    {
-        return '<a href="https://vk.com/deepn9x">deepn9x</a>';
-    }
+    public function t(string $category, string $message, array $params = []): string { return I18n::t($category, $message, $params); }
+    public function dd(mixed $value, bool $die = true): void { echo '<pre>'; print_r($value); echo '</pre>'; if ($die) die; }
+    public function config(?string $keyName = null): mixed { return $keyName === null ? $this->configFile : ($this->configFile[$keyName] ?? null); }
+    public static function powered(): string { return '<a href="https://vk.com/deepn9x">deepn9x</a>'; }
 
-    public function run()
+    public function run(): Response|string
     {
         try {
-
-            return $this->router->resolve();
-        } catch (\Throwable $e) {
-
-            $code = $e->getCode();
-
-            $controller = new \app\controllers\ErrorController();
-
-
-            // ✅ РЕГИСТРИРУЕМ ОБРАБОТЧИК ОШИБОК
+            return $this->middleware->handle($this->request, function (): Response {
+                $route = $this->router->match();
+                $result = $this->dispatcher->dispatch($route);
+                return $result instanceof Response ? $result : Response::html((string) $result);
+            });
+        } catch (Throwable $e) {
+            $code = (int) $e->getCode();
+            if ($code < 400 || $code > 599) $code = 500;
             ErrorHandler::log($e, $code);
-
-            return $controller->actionIndex(
-                $code,
-                $e->getMessage(),
-            );
+            return Response::error($code, $e->getMessage());
         }
     }
-
-
-    // ------------------------
-    // Методы для alias
-    // ------------------------
-    public static function getAlias($key)
-    {
-        return (new App)->config($key)[$key] ?? null;
-    }
-
-
 }
