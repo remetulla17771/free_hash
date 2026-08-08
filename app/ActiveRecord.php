@@ -29,7 +29,7 @@ abstract class ActiveRecord implements JsonSerializable
     protected function queryFactory(): QueryFactory
     {
         if ($this->queryFactory === null) {
-            $this->queryFactory = new QueryFactory(new ModelFactory());
+            $this->queryFactory = App::instance()->container->get(QueryFactory::class);
         }
         return $this->queryFactory;
     }
@@ -78,8 +78,13 @@ abstract class ActiveRecord implements JsonSerializable
     }
 
     private function requiredAttribute(string $name): mixed { if (!$this->hasAttribute($name)) throw new RuntimeException("Relation key '{$name}' is not loaded."); return $this->attributes[$name]; }
-    public static function find(Db $db): Query { return (new static($db))->queryFactory()->create(static::class, $db); }
-    public static function findOne(int $id, Db $db): ?static { return static::find($db)->where(['id' => $id])->one(); }
+    public static function find(?Db $db = null): Query
+    {
+        $db ??= App::instance()->container->get(Db::class);
+        $model = new static($db);
+        return $model->queryFactory()->create(static::class, $db);
+    }
+    public static function findOne(int $id, ?Db $db = null): ?static { return static::find($db)->where(['id' => $id])->one(); }
 
     public function delete(): bool
     {
@@ -87,8 +92,9 @@ abstract class ActiveRecord implements JsonSerializable
         return $this->recordPersister()->delete(static::tableName(), $this->requiredAttribute('id'));
     }
 
-    public static function deleteAll(array $condition, Db $db): bool
+    public static function deleteAll(array $condition, ?Db $db = null): bool
     {
+        $db ??= App::instance()->container->get(Db::class);
         [$where, $params] = self::buildCondition($condition);
         $sql = 'DELETE FROM ' . self::quoteIdentifier(static::tableName()) . ($where !== '' ? ' WHERE ' . $where : '');
         return $db->pdo()->prepare($sql)->execute($params);
