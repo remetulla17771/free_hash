@@ -15,6 +15,7 @@ class App
     public Container $container;
     public Dispatcher $dispatcher;
     public MiddlewareDispatcher $middleware;
+    public ModuleManager $modules;
 
     public string $title = 'My App';
     private array $configFile;
@@ -36,7 +37,13 @@ class App
 
         $this->registerComponents($this->configFile['components'] ?? []);
 
-        $this->router = new Router($this->request);
+        $this->modules = new ModuleManager(
+            $this->container,
+            $this->configFile['modules'] ?? []
+        );
+        $this->container->singleton(ModuleManager::class, $this->modules);
+
+        $this->router = new Router($this->request, $this->modules);
         $this->container->singleton(Router::class, $this->router);
 
         $this->dispatcher = new Dispatcher($this->container);
