@@ -16,7 +16,7 @@ abstract class ActiveRecord implements JsonSerializable
     abstract public static function tableName(): string;
     abstract public function attributeLabels();
 
-    public function __construct(protected ?Db $db = null)
+    public function __construct(protected ?Db $db = null, protected ?RecordPersister $persister = null)
     {
     }
 
@@ -28,15 +28,16 @@ abstract class ActiveRecord implements JsonSerializable
         return $this->db;
     }
 
-    public function jsonSerialize(): mixed
+    protected function recordPersister(): RecordPersister
     {
-        return $this->toArray();
+        if ($this->persister !== null) {
+            return $this->persister;
+        }
+        return new RecordPersister($this->database());
     }
 
-    public function toArray(): array
-    {
-        return $this->attributes;
-    }
+    public function jsonSerialize(): mixed { return $this->toArray(); }
+    public function toArray(): array { return $this->attributes; }
 
     public function __get($name)
     {
@@ -59,10 +60,7 @@ abstract class ActiveRecord implements JsonSerializable
         unset($this->_relCache[$name]);
     }
 
-    public function __isset($name): bool
-    {
-        return isset($this->attributes[$name]) || method_exists($this, 'get' . ucfirst($name));
-    }
+    public function __isset($name): bool { return isset($this->attributes[$name]) || method_exists($this, 'get' . ucfirst($name)); }
 
     protected function isPluralName(string $name): bool
     {
@@ -109,13 +107,11 @@ abstract class ActiveRecord implements JsonSerializable
     }
 
     public static function find(Db $db): Query { return new Query(static::class, $db); }
-
     public static function findOne(int $id, Db $db): ?static { return static::find($db)->where(['id' => $id])->one(); }
 
     public function delete(): bool
     {
-        $id = $this->requiredAttribute('id');
-        return $this->database()->pdo()->prepare('DELETE FROM ' . self::quoteIdentifier(static::tableName()) . ' WHERE `id` = :id')->execute(['id' => $id]);
+        return $this->recordPersister()->delete(static::tableName(), $this->requiredAttribute('id'));
     }
 
     public static function deleteAll(array $condition, Db $db): bool
@@ -130,37 +126,17 @@ abstract class ActiveRecord implements JsonSerializable
     public function save(): bool
     {
         if ($this->attributes === []) throw new RuntimeException('Cannot save an empty model.');
-        $pdo = $this->database()->pdo();
-        $table = self::quoteIdentifier(static::tableName());
         $attributes = $this->attributes;
+        $id = $attributes['id'] ?? null;
+        unset($attributes['id']);
 
-        if (array_key_exists('id', $attributes) && $attributes['id'] !== null) {
-            $id = $attributes['id'];
-            unset($attributes['id']);
-            if ($attributes === []) return true;
-            $sets = [];
-            $params = ['id' => $id];
-            foreach ($attributes as $key => $value) {
-                $parameter = 'attr_' . count($params);
-                $sets[] = self::quoteIdentifier($key) . ' = :' . $parameter;
-                $params[$parameter] = $value;
-            }
-            return $pdo->prepare('UPDATE ' . $table . ' SET ' . implode(', ', $sets) . ' WHERE `id` = :id')->execute($params);
+        if ($id !== null) {
+            return $this->recordPersister()->update(static::tableName(), $id, $attributes);
         }
 
-        $columns = $placeholders = $params = [];
-        foreach ($attributes as $key => $value) {
-            $parameter = 'attr_' . count($params);
-            $columns[] = self::quoteIdentifier($key);
-            $placeholders[] = ':' . $parameter;
-            $params[$parameter] = $value;
-        }
-        $result = $pdo->prepare('INSERT INTO ' . $table . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')')->execute($params);
-        if ($result) {
-            $id = $pdo->lastInsertId();
-            if ($id !== '0' && !array_key_exists('id', $this->attributes)) $this->attributes['id'] = (int) $id;
-        }
-        return $result;
+        $newId = $this->recordPersister()->insert(static::tableName(), $attributes);
+        if ($newId !== null && !array_key_exists('id', $this->attributes)) $this->attributes['id'] = (int) $newId;
+        return true;
     }
 
     private static function buildCondition(array $condition): array
