@@ -1,6 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app;
+
+use InvalidArgumentException;
+use RuntimeException;
 
 abstract class ActiveRecord
 {
@@ -11,65 +16,53 @@ abstract class ActiveRecord
 
     abstract public function attributeLabels();
 
-//    public function __get($name)
-//    {
-//        return $this->attributes[$name] ?? null;
-//    }
-
     public function __get($name)
     {
-        // relation cache
-        if (array_key_exists($name, $this->_relCache)) return $this->_relCache[$name];
-
-        // relations: getX()
-        $method = 'get' . ucfirst($name);
-        if (method_exists($this, $method)) {
-            $q = $this->$method();
-            if ($q instanceof \app\Query) {
-                $many = $q->relMany ?? $this->isPluralName($name);
-                return $this->_relCache[$name] = ($many ? $q->all() : $q->one());
-            }
-            return $this->_relCache[$name] = $q;
+        if (array_key_exists($name, $this->_relCache)) {
+            return $this->_relCache[$name];
         }
 
-        // обычные атрибуты (id, login, ...)
+        $method = 'get' . ucfirst($name);
+        if (method_exists($this, $method)) {
+            $query = $this->$method();
+            if ($query instanceof Query) {
+                $many = $query->relMany ?? $this->isPluralName($name);
+                return $this->_relCache[$name] = $many ? $query->all() : $query->one();
+            }
+            return $this->_relCache[$name] = $query;
+        }
+
         return $this->attributes[$name] ?? null;
     }
 
-    public function __set($name, $value)
+    public function __set($name, $value): void
     {
         $this->attributes[$name] = $value;
+        unset($this->_relCache[$name]);
     }
 
     public function __isset($name): bool
     {
         return isset($this->attributes[$name]) || method_exists($this, 'get' . ucfirst($name));
     }
+
     protected function isPluralName(string $name): bool
     {
-        $n = strtolower($name);
-        return str_ends_with($n, 's') || str_ends_with($n, 'list') || str_ends_with($n, 'items');
+        $name = strtolower($name);
+        return str_ends_with($name, 's') || str_ends_with($name, 'list') || str_ends_with($name, 'items');
     }
 
-    public function load(array $data, ?string $formName = null)
+    public function load(array $data, ?string $formName = null): bool
     {
-//        if ($formName === null) {
-//            $formName = (new \ReflectionClass($this))->getShortName();
-//        }
-//
-//        if (isset($data[$formName]) && is_array($data[$formName])) {
-//            $data = $data[$formName];
-//        }
-//
-//        $loaded = false;
-
         foreach ($data as $key => $value) {
+            if (!is_string($key) || $key === '') {
+                continue;
+            }
             $this->attributes[$key] = $value;
         }
 
+        $this->_relCache = [];
         return true;
-
-
     }
 
     public function hasAttribute(string $name): bool
@@ -79,111 +72,147 @@ abstract class ActiveRecord
 
     public function hasOne(string $class, array $link): Query
     {
-        $fk = array_key_first($link);
-        $pk = $link[$fk];
-
-        if (!array_key_exists($pk, $this->attributes)) {
-            throw new \RuntimeException("Relation key '{$pk}' is not loaded");
-        }
-
-        return $class::find()->where([$fk => $this->attributes[$pk]])->asOne();
+        [$foreignKey, $primaryKey] = $this->relationLink($link);
+        return $class::find()->where([$foreignKey => $this->requiredAttribute($primaryKey)])->asOne();
     }
 
     public function hasMany(string $class, array $link): Query
     {
-        $fk = array_key_first($link);
-        $pk = $link[$fk];
-
-        if (!array_key_exists($pk, $this->attributes)) {
-            throw new \RuntimeException("Relation key '{$pk}' is not loaded");
-        }
-
-        return $class::find()->where([$fk => $this->attributes[$pk]])->asMany();
+        [$foreignKey, $primaryKey] = $this->relationLink($link);
+        return $class::find()->where([$foreignKey => $this->requiredAttribute($primaryKey)])->asMany();
     }
 
+    private function relationLink(array $link): array
+    {
+        if (count($link) !== 1) {
+            throw new InvalidArgumentException('Relation link must contain exactly one foreign/primary key pair.');
+        }
 
+        $foreignKey = array_key_first($link);
+        $primaryKey = $link[$foreignKey];
 
+        if (!is_string($foreignKey) || !is_string($primaryKey) || $foreignKey === '' || $primaryKey === '') {
+            throw new InvalidArgumentException('Relation keys must be non-empty strings.');
+        }
 
-    public static function find()
+        return [$foreignKey, $primaryKey];
+    }
+
+    private function requiredAttribute(string $name): mixed
+    {
+        if (!$this->hasAttribute($name)) {
+            throw new RuntimeException("Relation key '{$name}' is not loaded.");
+        }
+
+        return $this->attributes[$name];
+    }
+
+    public static function find(): Query
     {
         return new Query(static::class);
     }
 
-    public static function findOne(int $id)
+    public static function findOne(int $id): ?static
     {
-        return static::find()
-            ->where(['id' => $id])
-            ->one();
+        return static::find()->where(['id' => $id])->one();
     }
 
-    public function delete()
+    public function delete(): bool
     {
-        if (!isset($this->attributes['id'])) {
-            throw new \Exception('Невозможно удалить: id не задан');
-        }
-
-        $db = Db::getInstance();
-        $sql = "DELETE FROM " . static::tableName() . " WHERE id = :id";
-
-        $stmt = $db->prepare($sql);
-
-        return $stmt->execute([
-            'id' => $this->attributes['id']
-        ]);
+        $id = $this->requiredAttribute('id');
+        $sql = 'DELETE FROM ' . $this->quoteIdentifier(static::tableName()) . ' WHERE ' . $this->quoteIdentifier('id') . ' = :id';
+        return Db::pdo()->prepare($sql)->execute(['id' => $id]);
     }
 
-
-    public static function deleteAll(array $condition = [])
+    public static function deleteAll(array $condition = []): bool
     {
-        $sql = "DELETE FROM " . static::tableName();
-        $params = [];
-
-        if (!empty($condition)) {
-            $parts = [];
-            foreach ($condition as $k => $v) {
-                $parts[] = "$k = :$k";
-                $params[$k] = $v;
-            }
-            $sql .= " WHERE " . implode(' AND ', $parts);
-        }
-
-        $stmt = Db::pdo()->prepare($sql);
-        return $stmt->execute($params);
+        $table = self::quoteIdentifier(static::tableName());
+        [$where, $params] = self::buildCondition($condition);
+        $sql = 'DELETE FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
+        return Db::pdo()->prepare($sql)->execute($params);
     }
 
-    public function getPrimaryKey(string $name = 'id')
+    public function getPrimaryKey(string $name = 'id'): mixed
     {
         return $this->attributes[$name] ?? null;
     }
 
     public function save(): bool
     {
-        $db = Db::getInstance();
-
-        if (isset($this->attributes['id'])) {
-            // update
-            $fields = [];
-            foreach ($this->attributes as $key => $value) {
-                if ($key === 'id') continue;
-                $fields[] = "$key = :$key";
-            }
-
-            $sql = "UPDATE " . static::tableName()
-                . " SET " . implode(', ', $fields)
-                . " WHERE id = :id";
-
-
-        } else {
-            // insert
-            $keys = array_keys($this->attributes);
-            $columns = implode(',', $keys);
-            $params  = ':' . implode(',:', $keys);
-
-            $sql = "INSERT INTO " . static::tableName()
-                . " ($columns) VALUES ($params)";
+        if ($this->attributes === []) {
+            throw new RuntimeException('Cannot save an empty model.');
         }
 
-        $stmt = $db->prepare($sql);
-        return $stmt->execute($this->attributes);
+        $table = $this->quoteIdentifier(static::tableName());
+        $attributes = $this->attributes;
+        $pdo = Db::pdo();
+
+        if (array_key_exists('id', $attributes) && $attributes['id'] !== null) {
+            $id = $attributes['id'];
+            unset($attributes['id']);
+
+            if ($attributes === []) {
+                return true;
+            }
+
+            $sets = [];
+            $params = ['id' => $id];
+            foreach ($attributes as $key => $value) {
+                $parameter = 'attr_' . count($params);
+                $sets[] = $this->quoteIdentifier($key) . ' = :' . $parameter;
+                $params[$parameter] = $value;
+            }
+
+            $sql = 'UPDATE ' . $table . ' SET ' . implode(', ', $sets) . ' WHERE ' . $this->quoteIdentifier('id') . ' = :id';
+            return $pdo->prepare($sql)->execute($params);
+        }
+
+        $columns = [];
+        $placeholders = [];
+        $params = [];
+        foreach ($attributes as $key => $value) {
+            $parameter = 'attr_' . count($params);
+            $columns[] = $this->quoteIdentifier($key);
+            $placeholders[] = ':' . $parameter;
+            $params[$parameter] = $value;
+        }
+
+        $sql = 'INSERT INTO ' . $table
+            . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+
+        $result = $pdo->prepare($sql)->execute($params);
+        if ($result && $pdo->lastInsertId() !== '0' && !array_key_exists('id', $this->attributes)) {
+            $this->attributes['id'] = (int) $pdo->lastInsertId();
+        }
+
+        return $result;
+    }
+
+    private static function buildCondition(array $condition): array
+    {
+        $parts = [];
+        $params = [];
+        $index = 0;
+
+        foreach ($condition as $column => $value) {
+            if (!is_string($column) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) {
+                throw new InvalidArgumentException('Invalid SQL column name.');
+            }
+
+            $parameter = 'condition_' . $index++;
+            $parts[] = self::quoteIdentifier($column) . ' = :' . $parameter;
+            $params[$parameter] = $value;
+        }
+
+        return [implode(' AND ', $parts), $params];
+    }
+
+    private static function quoteIdentifier(string $identifier): string
+    {
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?$/', $identifier)) {
+            throw new InvalidArgumentException('Invalid SQL identifier: ' . $identifier);
+        }
+
+        return implode('.', array_map(static fn (string $part) => '`' . $part . '`', explode('.', $identifier)));
     }
 }
