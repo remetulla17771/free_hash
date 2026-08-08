@@ -37,11 +37,10 @@ class App
 
         $this->registerComponents($this->configFile['components'] ?? []);
 
-        $this->modules = new ModuleManager(
-            $this->container,
-            $this->configFile['modules'] ?? []
-        );
+        $this->modules = new ModuleManager($this->container, $this->configFile['modules'] ?? []);
         $this->container->singleton(ModuleManager::class, $this->modules);
+
+        $this->container->singleton(ViewRenderer::class, new ViewRenderer(__DIR__ . '/../views'));
 
         $this->router = new Router($this->request, $this->modules);
         $this->container->singleton(Router::class, $this->router);
@@ -73,15 +72,11 @@ class App
 
     private function createComponent(string $className, array $options): object
     {
-        $instance = $options === []
-            ? $this->container->get($className)
-            : $this->container->build($className);
+        $instance = $options === [] ? $this->container->get($className) : $this->container->build($className);
 
         foreach ($options as $property => $value) {
             if (!property_exists($instance, $property)) {
-                throw new \RuntimeException(
-                    "Property '{$property}' does not exist in component class '{$className}'."
-                );
+                throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
             }
             $instance->{$property} = $value;
         }
@@ -117,22 +112,16 @@ class App
     public function run(): Response|string
     {
         try {
-            return $this->middleware->handle($this->request, function (Request $request): Response {
+            return $this->middleware->handle($this->request, function (): Response {
                 $route = $this->router->match();
                 $result = $this->dispatcher->dispatch($route);
-
-                if ($result instanceof Response) {
-                    return $result;
-                }
-
-                return Response::html((string) $result);
+                return $result instanceof Response ? $result : Response::html((string) $result);
             });
         } catch (Throwable $e) {
             $code = (int) $e->getCode();
             if ($code < 400 || $code > 599) {
                 $code = 500;
             }
-
             ErrorHandler::log($e, $code);
             return Response::error($code, $e->getMessage());
         }
