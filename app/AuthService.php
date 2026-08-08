@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app;
 
+use app\helpers\Session;
 use app\models\User;
 
 final class AuthService
@@ -12,8 +13,10 @@ final class AuthService
 
     private ?User $user = null;
 
-    public function __construct(private Db $db)
-    {
+    public function __construct(
+        private Db $db,
+        private Session $session,
+    ) {
         $this->loadIdentity();
     }
 
@@ -25,14 +28,14 @@ final class AuthService
             return false;
         }
 
-        $_SESSION[self::SESSION_KEY] = $user->getId();
+        $this->session->set(self::SESSION_KEY, $user->getId());
         $this->user = $user;
         return true;
     }
 
     public function logout(): void
     {
-        unset($_SESSION[self::SESSION_KEY]);
+        $this->session->remove(self::SESSION_KEY);
         $this->user = null;
     }
 
@@ -51,16 +54,20 @@ final class AuthService
 
     public function isGuest(): bool
     {
-        return $this->user === null;
+        return $this->identity() === null;
     }
 
     private function loadIdentity(): void
     {
-        $id = $_SESSION[self::SESSION_KEY] ?? null;
+        $id = $this->session->get(self::SESSION_KEY);
         if ($id === null) {
             return;
         }
 
         $this->user = User::findIdentity((int) $id, $this->db);
+
+        if ($this->user === null) {
+            $this->session->remove(self::SESSION_KEY);
+        }
     }
 }
