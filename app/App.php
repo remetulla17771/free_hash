@@ -40,6 +40,7 @@ final class App
         $this->db = Db::fromConfig($this->configFile['database'] ?? []);
         $this->container->singleton(Db::class, $this->db);
         $this->container->singleton(ModelFactory::class, new ModelFactory($this->container));
+        $this->container->singleton(QueryExecutor::class, new QueryExecutor($this->db->pdo()));
 
         $this->registerComponents($this->configFile['components'] ?? []);
         $this->registerServices($this->configFile['services'] ?? []);
@@ -62,17 +63,11 @@ final class App
     {
         foreach ($components as $id => $config) {
             $className = $config['class'] ?? null;
-            if (!is_string($className) || !class_exists($className)) {
-                throw new \RuntimeException("Component class '{$className}' not found.");
-            }
-
+            if (!is_string($className) || !class_exists($className)) throw new \RuntimeException("Component class '{$className}' not found.");
             $instance = $this->createConfiguredService($className, $config['options'] ?? []);
             $this->container->singleton($className, $instance);
             $this->container->singleton((string) $id, $instance);
-
-            if (property_exists($this, (string) $id)) {
-                $this->{$id} = $instance;
-            }
+            if (property_exists($this, (string) $id)) $this->{$id} = $instance;
         }
     }
 
@@ -80,10 +75,7 @@ final class App
     {
         foreach ($services as $id => $config) {
             $className = $config['class'] ?? null;
-            if (!is_string($className) || !class_exists($className)) {
-                throw new \RuntimeException("Service class '{$className}' not found.");
-            }
-
+            if (!is_string($className) || !class_exists($className)) throw new \RuntimeException("Service class '{$className}' not found.");
             $this->container->singleton($className, $this->createConfiguredService($className, $config['options'] ?? []));
             $this->container->alias((string) $id, $className);
         }
@@ -92,39 +84,17 @@ final class App
     private function createConfiguredService(string $className, array $options): object
     {
         $instance = $this->container->build($className);
-
         foreach ($options as $property => $value) {
-            if (!property_exists($instance, $property)) {
-                throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
-            }
+            if (!property_exists($instance, $property)) throw new \RuntimeException("Property '{$property}' does not exist in component class '{$className}'.");
             $instance->{$property} = $value;
         }
-
         return $instance;
     }
 
-    public function t(string $category, string $message, array $params = []): string
-    {
-        return I18n::t($category, $message, $params);
-    }
-
-    public function dd(mixed $value, bool $die = true): void
-    {
-        echo '<pre>';
-        print_r($value);
-        echo '</pre>';
-        if ($die) die;
-    }
-
-    public function config(?string $keyName = null): mixed
-    {
-        return $keyName === null ? $this->configFile : ($this->configFile[$keyName] ?? null);
-    }
-
-    public static function powered(): string
-    {
-        return '<a href="https://vk.com/deepn9x">deepn9x</a>';
-    }
+    public function t(string $category, string $message, array $params = []): string { return I18n::t($category, $message, $params); }
+    public function dd(mixed $value, bool $die = true): void { echo '<pre>'; print_r($value); echo '</pre>'; if ($die) die; }
+    public function config(?string $keyName = null): mixed { return $keyName === null ? $this->configFile : ($this->configFile[$keyName] ?? null); }
+    public static function powered(): string { return '<a href="https://vk.com/deepn9x">deepn9x</a>'; }
 
     public function run(): Response|string
     {
